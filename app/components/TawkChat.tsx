@@ -9,7 +9,7 @@ export default function TawkChat() {
   const pathname = usePathname();
 
 
-  // Không load chat trong admin
+  // Không hiển thị chat trong trang admin
   if (pathname.startsWith("/admin")) {
     return null;
   }
@@ -22,8 +22,8 @@ export default function TawkChat() {
       dangerouslySetInnerHTML={{
         __html: `
         
-        var Tawk_API = Tawk_API || {},
-        Tawk_LoadStart = new Date();
+        var Tawk_API = Tawk_API || {};
+        var Tawk_LoadStart = new Date();
 
         (function () {
 
@@ -33,7 +33,7 @@ export default function TawkChat() {
           s1.async = true;
 
           s1.src =
-          'https://embed.tawk.to/6a8934f5bc557a344a5e4987/1k0jvdno4';
+          "https://embed.tawk.to/6a8934f5bc557a344a5e4987/1k0jvdno4";
 
           s1.charset = "UTF-8";
 
