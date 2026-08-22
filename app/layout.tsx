@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
-
+import TawkChat from "./components/TawkChat";
 
 
 const geistSans = Geist({
@@ -41,7 +41,8 @@ export default function RootLayout({
         </CartProvider>
 
 
-        
+        <TawkChat />
+
 
       </body>
 

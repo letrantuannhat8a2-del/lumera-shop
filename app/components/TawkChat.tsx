@@ -1,18 +1,27 @@
 "use client";
 
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 
 
-export default function TawkChat(){
+export default function TawkChat() {
+
+  const pathname = usePathname();
+
+
+  // Không load chat trong admin
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
 
   return (
-
     <Script
       id="tawk-chat"
       strategy="afterInteractive"
       dangerouslySetInnerHTML={{
         __html: `
-
+        
         var Tawk_API = Tawk_API || {},
         Tawk_LoadStart = new Date();
 
@@ -43,7 +52,5 @@ export default function TawkChat(){
         `,
       }}
     />
-
   );
-
 }
