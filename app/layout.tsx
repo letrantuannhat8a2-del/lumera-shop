@@ -1,15 +1,51 @@
-"use client";
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { CartProvider } from "./context/CartContext";
+import TawkChat from "./components/TawkChat";
 
-import Script from "next/script";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
 
-export default function TawkChat() {
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+
+export const metadata: Metadata = {
+  title: "LUMÉRA | Luxury Dresses",
+  description:
+    "Discover elegant luxury dresses from LUMÉRA.",
+};
+
+
+export default function RootLayout({
+  children,
+}: LayoutProps<"/">) {
 
   return (
-    <Script
-      id="tawk-chat"
-      src="https://embed.tawk.to/6a8934f5bc557a344a5e4987/1k0jvdno4"
-      strategy="afterInteractive"
-    />
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+
+      <body className="min-h-full flex flex-col">
+
+        <CartProvider>
+          {children}
+        </CartProvider>
+
+
+        <TawkChat />
+
+
+      </body>
+
+    </html>
   );
 }
