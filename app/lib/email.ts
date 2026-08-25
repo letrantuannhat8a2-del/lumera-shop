@@ -50,12 +50,12 @@ export type OrderEmailData = {
 };
 
 
-// =============================
+// =====================================================
 // ESCAPE HTML
-// =============================
+// =====================================================
 
 function escapeHtml(value: string) {
-  return value
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -64,9 +64,9 @@ function escapeHtml(value: string) {
 }
 
 
-// =============================
+// =====================================================
 // FORMAT USD
-// =============================
+// =====================================================
 
 function formatUSD(value: number) {
   return new Intl.NumberFormat(
@@ -86,12 +86,16 @@ function formatUSD(value: number) {
 export async function sendOrderConfirmationEmail(
   order: OrderEmailData
 ) {
-  const testEmail =
-    process.env.RESEND_TEST_EMAIL;
+  // ===================================================
+  // CUSTOMER EMAIL
+  // ===================================================
 
-  if (!testEmail) {
+  const customerEmail =
+    order.email?.trim();
+
+  if (!customerEmail) {
     throw new Error(
-      "Missing RESEND_TEST_EMAIL"
+      "Missing customer order email."
     );
   }
 
@@ -184,8 +188,10 @@ export async function sendOrderConfirmationEmail(
         from:
           "LUMÉRA <onboarding@resend.dev>",
 
-        // TEST MODE
-        to: [testEmail],
+        // =================================================
+        // SEND TO THE CUSTOMER WHO PLACED THE ORDER
+        // =================================================
+        to: [customerEmail],
 
         subject:
           `Order ${order.order_number} confirmed — LUMÉRA`,
@@ -595,7 +601,9 @@ export async function sendOrderConfirmationEmail(
     );
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(
+      error.message
+    );
   }
 
   return data;
@@ -614,12 +622,16 @@ export async function sendOrderStatusEmail(
     order_status: string;
   }
 ) {
-  const testEmail =
-    process.env.RESEND_TEST_EMAIL;
+  // ===================================================
+  // CUSTOMER EMAIL
+  // ===================================================
 
-  if (!testEmail) {
+  const customerEmail =
+    order.email?.trim();
+
+  if (!customerEmail) {
     throw new Error(
-      "Missing RESEND_TEST_EMAIL"
+      "Missing customer order email."
     );
   }
 
@@ -629,7 +641,10 @@ export async function sendOrderStatusEmail(
   let message = "";
 
 
+  // ===================================================
   // SHIPPED
+  // ===================================================
+
   if (
     order.order_status === "shipped"
   ) {
@@ -647,7 +662,10 @@ export async function sendOrderStatusEmail(
   }
 
 
+  // ===================================================
   // DELIVERED
+  // ===================================================
+
   else if (
     order.order_status === "delivered"
   ) {
@@ -665,7 +683,10 @@ export async function sendOrderStatusEmail(
   }
 
 
+  // ===================================================
   // CANCELLED
+  // ===================================================
+
   else if (
     order.order_status === "cancelled"
   ) {
@@ -683,7 +704,10 @@ export async function sendOrderStatusEmail(
   }
 
 
+  // ===================================================
   // PROCESSING
+  // ===================================================
+
   else {
     return;
   }
@@ -694,10 +718,10 @@ export async function sendOrderStatusEmail(
       from:
         "LUMÉRA <onboarding@resend.dev>",
 
-      // TEST MODE
-      // Sau này đổi thành:
-      // to: [order.email]
-      to: [testEmail],
+      // =================================================
+      // SEND TO THE CUSTOMER
+      // =================================================
+      to: [customerEmail],
 
       subject,
 

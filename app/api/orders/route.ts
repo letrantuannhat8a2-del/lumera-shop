@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { createClient } from "../../lib/supabase/sever";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { paypalRequest } from "../../lib/paypal";
 
@@ -14,16 +15,53 @@ type CartItemInput = {
   quantity: number;
 };
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request
+) {
   try {
-    const body = await request.json();
+    // =========================================
+    // 1. GET LOGGED-IN SUPABASE USER
+    // =========================================
+
+    const supabase =
+      await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user?.email) {
+      return NextResponse.json(
+        {
+          error:
+            "You must be signed in to place an order.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const accountEmail =
+      user.email.trim();
+
+    // =========================================
+    // 2. READ CHECKOUT DATA
+    // =========================================
+
+    const body =
+      await request.json();
 
     const {
       paypalOrderId,
 
       firstName,
       lastName,
+
+      // Email này chỉ dùng cho checkout/email.
+      // Không dùng để xác định owner của order.
       email,
+
       phone,
 
       country,
@@ -37,15 +75,14 @@ export async function POST(request: Request) {
       shippingMethod,
     } = body;
 
-    // =========================
-    // BASIC VALIDATION
-    // =========================
+    // =========================================
+    // 3. BASIC VALIDATION
+    // =========================================
 
     if (
       !paypalOrderId ||
       !firstName ||
       !lastName ||
-      !email ||
       !country ||
       !addressLine1 ||
       !city ||
@@ -65,8 +102,10 @@ export async function POST(request: Request) {
     }
 
     if (
-      shippingMethod !== "standard" &&
-      shippingMethod !== "express"
+      shippingMethod !==
+        "standard" &&
+      shippingMethod !==
+        "express"
     ) {
       return NextResponse.json(
         {
@@ -82,9 +121,9 @@ export async function POST(request: Request) {
     const cartItems =
       items as CartItemInput[];
 
-    // =========================
-    // CHECK DUPLICATE ORDER
-    // =========================
+    // =========================================
+    // 4. CHECK DUPLICATE PAYPAL ORDER
+    // =========================================
 
     const {
       data: existingOrder,
@@ -104,9 +143,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // =========================
-    // VALIDATE CART
-    // =========================
+    // =========================================
+    // 5. VALIDATE CART
+    // =========================================
 
     for (const item of cartItems) {
       if (
@@ -137,9 +176,9 @@ export async function POST(request: Request) {
       ),
     ];
 
-    // =========================
-    // GET REAL PRODUCT DATA
-    // =========================
+    // =========================================
+    // 6. GET REAL PRODUCT DATA
+    // =========================================
 
     const {
       data: products,
@@ -199,11 +238,18 @@ export async function POST(request: Request) {
 
     let subtotal = 0;
 
-    const safeItems = [];
+    const safeItems: {
+      id: string;
+      name: string;
+      price: number;
+      image: string;
+      size: string;
+      quantity: number;
+    }[] = [];
 
-    // =========================
-    // SERVER CALCULATES PRICE
-    // =========================
+    // =========================================
+    // 7. SERVER CALCULATES PRICE
+    // =========================================
 
     for (const cartItem of cartItems) {
       const product =
@@ -258,7 +304,9 @@ export async function POST(request: Request) {
       }
 
       const allowedSizes =
-        Array.isArray(product.sizes)
+        Array.isArray(
+          product.sizes
+        )
           ? product.sizes
           : [];
 
@@ -282,35 +330,32 @@ export async function POST(request: Request) {
         Number(product.price);
 
       subtotal +=
-        realPrice *
-        quantity;
+        realPrice * quantity;
 
-      // IMPORTANT:
-      // lưu dữ liệu lấy từ database,
-      // không lấy name/price/image từ browser
       safeItems.push({
-        id:
-          product.id,
+        id: product.id,
 
-        name:
-          product.name,
+        name: product.name,
 
-        price:
-          realPrice,
+        price: realPrice,
 
         image:
           product.image_1 ||
           "/image/image_1.png",
 
-        size:
-          cartItem.size,
+        size: cartItem.size,
 
         quantity,
       });
     }
 
+    // =========================================
+    // 8. CALCULATE SHIPPING / TOTAL
+    // =========================================
+
     const shippingFee =
-      shippingMethod === "express"
+      shippingMethod ===
+      "express"
         ? 57.42
         : 0;
 
@@ -332,9 +377,9 @@ export async function POST(request: Request) {
         ).toFixed(2)
       );
 
-    // =========================
-    // VERIFY PAYPAL PAYMENT
-    // =========================
+    // =========================================
+    // 9. VERIFY PAYPAL PAYMENT
+    // =========================================
 
     const paypalResponse =
       await paypalRequest(
@@ -387,6 +432,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // =========================================
+    // 10. VERIFY PAYMENT AMOUNT
+    // =========================================
+
     const paypalAmount =
       Number(
         capture.amount?.value
@@ -397,7 +446,8 @@ export async function POST(request: Request) {
         ?.currency_code;
 
     if (
-      paypalCurrency !== "USD" ||
+      paypalCurrency !==
+        "USD" ||
       Math.abs(
         paypalAmount -
           safeTotal
@@ -424,81 +474,133 @@ export async function POST(request: Request) {
       );
     }
 
-    // =========================
-    // SAVE VERIFIED ORDER
-    // =========================
+    // =========================================
+    // 11. CREATE UNIQUE ORDER NUMBER
+    // =========================================
 
-   const orderNumber =
-  "LMR-" +
-  Date.now()
-    .toString()
-    .slice(-8);
+    const orderNumber =
+      "LMR-" +
+      Date.now()
+        .toString()
+        .slice(-8);
 
-const {
-  data: order,
-  error: orderError,
-} = await supabaseAdmin.rpc(
-  "finalize_order",
-  {
-    p_order_number:
-      orderNumber,
+    // =========================================
+    // 12. SAVE VERIFIED ORDER
+    // =========================================
+    //
+    // IMPORTANT:
+    // p_email = accountEmail
+    //
+    // This is the email of the logged-in
+    // Supabase account, NOT the arbitrary
+    // checkout email.
+    //
 
-    p_paypal_order_id:
-      paypalOrderId,
+    const {
+      data: order,
+      error: orderError,
+    } =
+      await supabaseAdmin.rpc(
+        "finalize_order",
+        {
+          p_order_number:
+            orderNumber,
 
-    p_paypal_capture_id:
-      capture.id,
+          p_paypal_order_id:
+            paypalOrderId,
 
-    p_first_name:
-      firstName,
+          p_paypal_capture_id:
+            capture.id,
 
-    p_last_name:
-      lastName,
+          p_first_name:
+            firstName,
 
-    p_email:
-      email,
+          p_last_name:
+            lastName,
 
-    p_phone:
-      phone || "",
+          p_email:
+            accountEmail,
 
-    p_country:
-      country,
+          p_phone:
+            phone || "",
 
-    p_address_line1:
-      addressLine1,
+          p_country:
+            country,
 
-    p_address_line2:
-      addressLine2 || "",
+          p_address_line1:
+            addressLine1,
 
-    p_city:
-      city,
+          p_address_line2:
+            addressLine2 ||
+            "",
 
-    p_state_region:
-      stateRegion || "",
+          p_city:
+            city,
 
-    p_postal_code:
-      postalCode,
+          p_state_region:
+            stateRegion ||
+            "",
 
-    p_items:
-      safeItems,
+          p_postal_code:
+            postalCode,
 
-    p_shipping_method:
-      shippingMethod,
+          p_items:
+            safeItems,
 
-    p_subtotal:
-      safeSubtotal,
+          p_shipping_method:
+            shippingMethod,
 
-    p_shipping_fee:
-      safeShippingFee,
+          p_subtotal:
+            safeSubtotal,
 
-    p_total:
-      safeTotal,
-  }
-);
+          p_shipping_fee:
+            safeShippingFee,
 
-    // =========================
-    // SEND CONFIRMATION EMAIL
-    // =========================
+          p_total:
+            safeTotal,
+        }
+      );
+
+    // =========================================
+    // 13. CHECK RPC ERROR
+    // =========================================
+
+    if (orderError) {
+      console.error(
+        "Finalize order error:",
+        orderError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Payment succeeded, but the order could not be saved.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!order) {
+      console.error(
+        "Finalize order returned no order."
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Payment succeeded, but no order was returned.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // =========================================
+    // 14. SEND CONFIRMATION EMAIL
+    // =========================================
 
     try {
       await sendOrderConfirmationEmail(
@@ -517,11 +619,27 @@ const {
       );
     }
 
+    // =========================================
+    // 15. RETURN CREATED ORDER
+    // =========================================
+
+    console.log(
+      "ORDER CREATED:",
+      {
+        orderNumber:
+          order?.order_number,
+
+        accountEmail,
+
+        checkoutEmail:
+          email,
+      }
+    );
+
     return NextResponse.json({
       success: true,
       order,
     });
-
   } catch (error) {
     console.error(
       "Create order error:",

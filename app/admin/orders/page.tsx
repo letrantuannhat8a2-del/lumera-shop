@@ -57,32 +57,7 @@ export default async function AdminOrdersPage() {
   return (
     <main className="min-h-screen bg-[#f8f6f2] text-black">
 
-      {/* HEADER */}
-      <header className="border-b border-black/10 px-10 py-7">
-        <div className="flex items-center justify-between">
-
-          <div>
-            <h1 className="font-serif text-2xl tracking-[0.25em]">
-              LUMÉRA
-            </h1>
-
-            <p className="mt-2 text-[9px] tracking-[0.3em] text-gray-400">
-              ADMINISTRATION
-            </p>
-          </div>
-
-          <div className="text-right">
-            <p className="text-xs text-gray-500">
-              Signed in as
-            </p>
-
-            <p className="mt-1 text-sm">
-              {user.email}
-            </p>
-          </div>
-
-        </div>
-      </header>
+     
 
       {/* CONTENT */}
       <section className="px-10 py-12">

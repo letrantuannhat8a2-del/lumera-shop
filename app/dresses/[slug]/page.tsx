@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import Header from "../../components/Header";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
-
 import ProductDetails from "../ProductDetails";
 
 type PageProps = {
@@ -14,10 +13,12 @@ type PageProps = {
 export default async function ProductPage({
   params,
 }: PageProps) {
-  const { slug } =
-    await params;
+  const { slug } = await params;
 
+  // ========================================
   // GET PRODUCT
+  // ========================================
+
   const {
     data: product,
     error: productError,
@@ -28,10 +29,7 @@ export default async function ProductPage({
     .eq("is_active", true)
     .single();
 
-  if (
-    productError ||
-    !product
-  ) {
+  if (productError || !product) {
     console.error(
       "Unable to load product:",
       productError
@@ -40,19 +38,17 @@ export default async function ProductPage({
     notFound();
   }
 
+  // ========================================
   // GET STOCK BY SIZE
+  // ========================================
+
   const {
     data: variants,
     error: variantError,
   } = await supabaseAdmin
     .from("product_variants")
-    .select(
-      "size, stock"
-    )
-    .eq(
-      "product_id",
-      product.id
-    );
+    .select("size, stock")
+    .eq("product_id", product.id);
 
   if (variantError) {
     console.error(
@@ -61,29 +57,30 @@ export default async function ProductPage({
     );
   }
 
-  const safeVariants =
-    variants?.map(
-      (variant) => ({
-        size:
-          variant.size,
+  // ========================================
+  // SAFE VARIANTS
+  // ========================================
 
-        stock:
-          Number(
-            variant.stock
-          ),
-      })
-    ) ?? [];
+  const safeVariants =
+    variants?.map((variant) => ({
+      size: variant.size,
+      stock: Number(variant.stock),
+    })) ?? [];
+
+  // ========================================
+  // TOTAL STOCK
+  // ========================================
 
   const totalStock =
     safeVariants.reduce(
-      (
-        total,
-        variant
-      ) =>
-        total +
-        variant.stock,
+      (total, variant) =>
+        total + variant.stock,
       0
     );
+
+  // ========================================
+  // PAGE
+  // ========================================
 
   return (
     <main className="min-h-screen bg-[#faf9f7] text-black">
@@ -94,25 +91,20 @@ export default async function ProductPage({
         product={{
           ...product,
 
-          price:
-            Number(
-              product.price
-            ),
+          price: Number(
+            product.price
+          ),
 
-          stock:
-            totalStock,
+          stock: totalStock,
 
-          sizes:
-            Array.isArray(
-              product.sizes
-            )
-              ? product.sizes
-              : [],
+          sizes: Array.isArray(
+            product.sizes
+          )
+            ? product.sizes
+            : [],
         }}
 
-        variants={
-          safeVariants
-        }
+        variants={safeVariants}
       />
 
     </main>

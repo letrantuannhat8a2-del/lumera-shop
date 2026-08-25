@@ -1,9 +1,12 @@
 import Link from "next/link";
 import ImageUploader from "./ImageUploader";
+import VideoUploader from "./VideoUploader";
+
 import {
   notFound,
   redirect,
 } from "next/navigation";
+
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "../../../lib/supabase/sever";
@@ -92,19 +95,16 @@ export default async function EditProductPage({
     );
   }
 
-  const productVariants:
-    Variant[] =
-      variants?.map(
-        (variant) => ({
-          size:
-            variant.size,
+  const productVariants: Variant[] =
+    variants?.map(
+      (variant) => ({
+        size: variant.size,
 
-          stock:
-            Number(
-              variant.stock
-            ),
-        })
-      ) ?? [];
+        stock: Number(
+          variant.stock
+        ),
+      })
+    ) ?? [];
 
   const sizes: string[] =
     Array.isArray(
@@ -123,6 +123,7 @@ export default async function EditProductPage({
     "use server";
 
     // CHECK ADMIN AGAIN
+
     const supabase =
       await createClient();
 
@@ -137,8 +138,7 @@ export default async function EditProductPage({
     if (
       !user ||
       !adminEmail ||
-      user.email !==
-        adminEmail
+      user.email !== adminEmail
     ) {
       redirect(
         "/admin/login"
@@ -151,12 +151,14 @@ export default async function EditProductPage({
           "price"
         )
       );
-const name =
-  String(
-    formData.get(
-      "name"
-    ) ?? ""
-  ).trim();
+
+    const name =
+      String(
+        formData.get(
+          "name"
+        ) ?? ""
+      ).trim();
+
     const description =
       String(
         formData.get(
@@ -169,7 +171,10 @@ const name =
         "isActive"
       ) === "on";
 
+    // =====================================
     // PRICE VALIDATION
+    // =====================================
+
     if (
       !Number.isFinite(
         price
@@ -189,24 +194,22 @@ const name =
     } = await supabaseAdmin
       .from("products")
       .update({
-  name,
+        name,
 
-  price:
-    Number(
-      price.toFixed(2)
-    ),
+        price: Number(
+          price.toFixed(2)
+        ),
 
-  description:
-    description ||
-    null,
+        description:
+          description ||
+          null,
 
-  is_active:
-    isActive,
+        is_active:
+          isActive,
 
-  updated_at:
-    new Date()
-      .toISOString(),
-})
+        updated_at:
+          new Date().toISOString(),
+      })
       .eq(
         "id",
         productId
@@ -268,8 +271,7 @@ const name =
                 safeStock,
 
               updated_at:
-                new Date()
-                  .toISOString(),
+                new Date().toISOString(),
             },
             {
               onConflict:
@@ -317,12 +319,16 @@ const name =
   return (
     <main className="min-h-screen bg-[#f8f6f2] text-black">
 
-      {/* HEADER */}
+      {/* =====================================
+          HEADER
+      ===================================== */}
+
       <header className="border-b border-black/10 bg-white px-10 py-7">
 
         <div className="flex items-center justify-between">
 
           <div>
+
             <h1 className="font-serif text-2xl tracking-[0.25em]">
               LUMÉRA
             </h1>
@@ -330,6 +336,7 @@ const name =
             <p className="mt-2 text-[9px] tracking-[0.3em] text-gray-400">
               ADMINISTRATION
             </p>
+
           </div>
 
           <div className="flex items-center gap-8">
@@ -354,9 +361,15 @@ const name =
 
       </header>
 
+
+      {/* =====================================
+          PAGE
+      ===================================== */}
+
       <section className="mx-auto max-w-[1100px] px-10 py-12">
 
         {/* TITLE */}
+
         <div className="flex items-end justify-between border-b border-black/10 pb-10">
 
           <div>
@@ -385,7 +398,11 @@ const name =
 
         </div>
 
-        {/* FORM */}
+
+        {/* =====================================
+            FORM
+        ===================================== */}
+
         <form
           action={
             updateProduct
@@ -393,10 +410,14 @@ const name =
           className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_0.7fr]"
         >
 
-          {/* LEFT */}
+          {/* =====================================
+              LEFT
+          ===================================== */}
+
           <div className="space-y-8">
 
-            {/* BASIC INFO */}
+            {/* PRODUCT INFORMATION */}
+
             <div className="bg-white p-8">
 
               <h3 className="text-[11px] tracking-[0.25em]">
@@ -406,26 +427,41 @@ const name =
               <div className="mt-7 space-y-6">
 
                 {/* NAME */}
+
                 <div>
 
-                  <label className="text-[10px] tracking-[0.18em] text-gray-400">
+                  <label
+                    htmlFor="name"
+                    className="text-[10px] tracking-[0.18em] text-gray-400"
+                  >
                     PRODUCT NAME
                   </label>
 
-             <input
-  name="name"
-  defaultValue={product.name}
-  className="
-    w-full
-    border
-    px-4
-    py-3
-  "
-/>
+                  <input
+                    id="name"
+                    name="name"
+                    defaultValue={
+                      product.name
+                    }
+                    className="
+                      mt-3
+                      w-full
+                      border
+                      border-black/20
+                      bg-white
+                      px-4
+                      py-3
+                      text-sm
+                      outline-none
+                      focus:border-black
+                    "
+                  />
 
                 </div>
 
+
                 {/* PRICE */}
+
                 <div>
 
                   <label
@@ -452,7 +488,9 @@ const name =
 
                 </div>
 
+
                 {/* DESCRIPTION */}
+
                 <div>
 
                   <label
@@ -479,7 +517,11 @@ const name =
 
             </div>
 
-            {/* INVENTORY */}
+
+            {/* =====================================
+                INVENTORY
+            ===================================== */}
+
             <div className="bg-white p-8">
 
               <div className="flex items-center justify-between">
@@ -516,9 +558,7 @@ const name =
                           htmlFor={`stock_${size}`}
                           className="text-[10px] tracking-[0.15em] text-gray-400"
                         >
-                          {
-                            size
-                          }
+                          {size}
                         </label>
 
                         <input
@@ -551,26 +591,58 @@ const name =
 
           </div>
 
-          {/* RIGHT */}
+
+          {/* =====================================
+              RIGHT
+          ===================================== */}
+
           <div>
 
             <div className="sticky top-8 space-y-6">
-<ImageUploader
 
- productId={product.id}
+              {/* =====================================
+                  PRODUCT IMAGES
+              ===================================== */}
 
- slug={product.slug}
+              <ImageUploader
+                productId={
+                  product.id
+                }
+                slug={
+                  product.slug
+                }
+                images={[
+                  product.image_1,
+                  product.image_2,
+                  product.image_3,
+                  product.image_4,
+                  product.image_5,
+                ]}
+              />
 
- images={[
-  product.image_1,
-  product.image_2,
-  product.image_3,
-  product.image_4,
-  product.image_5,
- ]}
 
-/>
-              {/* STATUS */}
+              {/* =====================================
+                  PRODUCT VIDEO
+              ===================================== */}
+
+              <VideoUploader
+                productId={
+                  product.id
+                }
+                slug={
+                  product.slug
+                }
+                videoUrl={
+                  product.video_url ??
+                  null
+                }
+              />
+
+
+              {/* =====================================
+                  PRODUCT STATUS
+              ===================================== */}
+
               <div className="bg-white p-8">
 
                 <h3 className="text-[11px] tracking-[0.25em]">
@@ -606,7 +678,11 @@ const name =
 
               </div>
 
-              {/* SUMMARY */}
+
+              {/* =====================================
+                  SUMMARY
+              ===================================== */}
+
               <div className="bg-white p-8">
 
                 <h3 className="text-[11px] tracking-[0.25em]">
@@ -675,13 +751,18 @@ const name =
 
               </div>
 
-              {/* SAVE */}
+
+              {/* =====================================
+                  SAVE
+              ===================================== */}
+
               <button
                 type="submit"
                 className="w-full bg-black px-6 py-5 text-[10px] tracking-[0.25em] text-white transition hover:bg-black/80"
               >
                 SAVE CHANGES
               </button>
+
 
               <Link
                 href={`/dresses/${product.slug}`}

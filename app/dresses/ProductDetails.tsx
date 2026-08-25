@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import ProductWishlistButton from "../components/ProductWishlistButton";
 import { useCart } from "../context/CartContext";
 
 type Product = {
@@ -12,29 +13,15 @@ type Product = {
   price: number;
   currency: string;
 
-  description:
-    | string
-    | null;
+  description: string | null;
 
-  image_1:
-    | string
-    | null;
+  image_1: string | null;
+  image_2: string | null;
+  image_3: string | null;
+  image_4: string | null;
+  image_5: string | null;
 
-  image_2:
-    | string
-    | null;
-
-  image_3:
-    | string
-    | null;
-
-  image_4:
-    | string
-    | null;
-
-  image_5:
-    | string
-    | null;
+  video_url: string | null;
 
   sizes: string[];
 
@@ -55,18 +42,13 @@ export default function ProductDetails({
   product,
   variants,
 }: ProductDetailsProps) {
-  const { addToCart } =
-    useCart();
+  const { addToCart } = useCart();
 
-  const [
-    selectedSize,
-    setSelectedSize,
-  ] = useState("");
+  const [selectedSize, setSelectedSize] =
+    useState("");
 
-  const [
-    quantity,
-    setQuantity,
-  ] = useState(1);
+  const [quantity, setQuantity] =
+    useState(1);
 
   const images = [
     product.image_1,
@@ -75,9 +57,7 @@ export default function ProductDetails({
     product.image_4,
     product.image_5,
   ].filter(
-    (
-      image
-    ): image is string =>
+    (image): image is string =>
       Boolean(image)
   );
 
@@ -93,7 +73,10 @@ export default function ProductDetails({
       }
     ).format(value);
 
-  // STOCK OF SELECTED SIZE
+  // ========================================
+  // SELECTED SIZE STOCK
+  // ========================================
+
   const selectedVariant =
     variants.find(
       (variant) =>
@@ -104,13 +87,13 @@ export default function ProductDetails({
   const selectedStock =
     selectedVariant?.stock ?? 0;
 
-  // TOTAL STOCK OF ALL SIZES
+  // ========================================
+  // TOTAL STOCK
+  // ========================================
+
   const totalStock =
     variants.reduce(
-      (
-        total,
-        variant
-      ) =>
+      (total, variant) =>
         total +
         Number(
           variant.stock
@@ -118,14 +101,17 @@ export default function ProductDetails({
       0
     );
 
+  // ========================================
+  // SELECT SIZE
+  // ========================================
+
   const handleSelectSize = (
     size: string
   ) => {
     const variant =
       variants.find(
         (item) =>
-          item.size ===
-          size
+          item.size === size
       );
 
     if (
@@ -135,193 +121,257 @@ export default function ProductDetails({
       return;
     }
 
-    setSelectedSize(
-      size
-    );
-
-    // Reset quantity when changing size
+    setSelectedSize(size);
     setQuantity(1);
   };
 
-  const handleIncrease =
-    () => {
-      if (!selectedSize) {
-        return;
-      }
+  // ========================================
+  // INCREASE QUANTITY
+  // ========================================
 
-      if (
-        quantity >=
-        selectedStock
-      ) {
-        return;
-      }
+  const handleIncrease = () => {
+    if (!selectedSize) {
+      return;
+    }
 
-      setQuantity(
-        (current) =>
-          current + 1
-      );
-    };
+    if (
+      quantity >=
+      selectedStock
+    ) {
+      return;
+    }
 
-  const handleDecrease =
-    () => {
-      setQuantity(
-        (current) =>
-          Math.max(
-            1,
-            current - 1
-          )
-      );
-    };
+    setQuantity(
+      (current) =>
+        current + 1
+    );
+  };
 
-  const handleAddToBag =
-    () => {
-      if (
-        !selectedSize
-      ) {
-        return;
-      }
+  // ========================================
+  // DECREASE QUANTITY
+  // ========================================
 
-      if (
-        selectedStock <= 0
-      ) {
-        alert(
-          "This size is sold out."
-        );
+  const handleDecrease = () => {
+    setQuantity(
+      (current) =>
+        Math.max(
+          1,
+          current - 1
+        )
+    );
+  };
 
-        return;
-      }
+  // ========================================
+  // ADD TO BAG
+  // ========================================
 
-      if (
-        quantity >
-        selectedStock
-      ) {
-        alert(
-          `Only ${selectedStock} item(s) left in size ${selectedSize}.`
-        );
+  const handleAddToBag = () => {
+    if (!selectedSize) {
+      return;
+    }
 
-        return;
-      }
-
-      addToCart({
-        id: product.id,
-
-        name:
-          product.name,
-
-        price:
-          Number(
-            product.price
-          ),
-
-        image:
-          product.image_1 ||
-          "/image/image_1.png",
-
-        size:
-          selectedSize,
-
-        quantity,
-         stock: selectedStock,
-      });
-
+    if (
+      selectedStock <= 0
+    ) {
       alert(
-        `${product.name} — Size ${selectedSize} — Quantity ${quantity} added to bag.`
+        "This size is sold out."
       );
-    };
+
+      return;
+    }
+
+    if (
+      quantity >
+      selectedStock
+    ) {
+      alert(
+        `Only ${selectedStock} item(s) left in size ${selectedSize}.`
+      );
+
+      return;
+    }
+
+    addToCart({
+      id: product.id,
+
+      name: product.name,
+
+      price:
+        Number(
+          product.price
+        ),
+
+      image:
+        product.image_1 ||
+        "/image/image_1.png",
+
+      size: selectedSize,
+
+      quantity,
+
+      stock:
+        selectedStock,
+    });
+
+    alert(
+      `${product.name} — Size ${selectedSize} — Quantity ${quantity} added to bag.`
+    );
+  };
 
   return (
-    <section className="grid grid-cols-1 gap-12 px-12 py-10 lg:grid-cols-[1.5fr_0.7fr]">
+    <section className="grid min-w-0 grid-cols-1 gap-8 px-4 py-6 sm:gap-10 sm:px-6 sm:py-8 lg:grid-cols-[1.5fr_0.7fr] lg:gap-12 lg:px-12 lg:py-10">
 
-      {/* IMAGES */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* ========================================
+          LEFT — PRODUCT GALLERY
+      ======================================== */}
 
-        {images.map(
-          (
-            image,
-            index
-          ) => {
-            const isLastOddImage =
-              images.length %
-                2 !==
-                0 &&
-              index ===
-                images.length -
-                  1;
+      <div className="min-w-0">
 
-            if (
-              isLastOddImage
-            ) {
+        {/* ========================================
+            PRODUCT IMAGES
+        ======================================== */}
+
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+
+          {images.map(
+            (image, index) => {
+
+              const isLastOddImage =
+                images.length %
+                  2 !==
+                  0 &&
+                index ===
+                  images.length -
+                    1;
+
+              if (
+                isLastOddImage
+              ) {
+                return (
+                  <div
+                    key={image}
+                    className="col-span-2 flex justify-center py-6 sm:py-10 lg:py-12"
+                  >
+                    <div className="relative aspect-[3/4] w-[72%] max-w-[560px] overflow-hidden bg-[#eee9e3] sm:w-[55%] lg:w-[48%]">
+
+                      <Image
+                        src={image}
+                        alt={`${product.name} ${
+                          index + 1
+                        }`}
+                        fill
+                        sizes="(max-width: 640px) 72vw, (max-width: 1024px) 55vw, 32vw"
+                        className="object-cover"
+                      />
+
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
-                  key={
-                    image
-                  }
-                  className="col-span-2 flex justify-center py-12"
+                  key={image}
+                  className="relative aspect-[3/4] overflow-hidden bg-[#eee9e3]"
                 >
-                  <div className="relative aspect-[3/4] w-[48%] max-w-[560px] overflow-hidden bg-[#eee9e3]">
 
-                    <Image
-                      src={
-                        image
-                      }
-                      alt={`${product.name} ${
-                        index +
-                        1
-                      }`}
-                      fill
-                      sizes="(max-width: 1024px) 48vw, 32vw"
-                      className="object-cover"
-                    />
+                  <Image
+                    src={image}
+                    alt={`${product.name} ${
+                      index + 1
+                    }`}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 32vw"
+                    priority={
+                      index === 0
+                    }
+                    className="object-cover"
+                  />
 
-                  </div>
                 </div>
               );
             }
+          )}
 
-            return (
-              <div
-                key={
-                  image
+        </div>
+
+
+        {/* ========================================
+            PRODUCT VIDEO
+        ======================================== */}
+
+        {product.video_url && (
+          <section className="mt-14 sm:mt-20 lg:mt-24">
+
+            {/* VIDEO HEADING */}
+
+            <div className="mb-7 px-2 text-center sm:mb-10">
+
+              <p className="text-[8px] tracking-[0.35em] text-gray-400 sm:text-[9px]">
+                THE LUMÉRA STORY
+              </p>
+
+              <h2 className="mt-3 font-serif text-2xl sm:mt-4 sm:text-3xl md:text-4xl">
+                The Design
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-gray-500 sm:mt-4 sm:text-sm">
+                Discover the movement,
+                details and silhouette
+                of this LUMÉRA piece.
+              </p>
+
+            </div>
+
+
+            {/* VIDEO */}
+
+            <div className="relative w-full overflow-hidden bg-black">
+
+              <video
+                src={
+                  product.video_url
                 }
-                className="relative aspect-[3/4] overflow-hidden bg-[#eee9e3]"
-              >
+                poster={
+                  product.image_1 ||
+                  undefined
+                }
+                controls
+                playsInline
+                preload="metadata"
+                className="block h-auto max-h-[75vh] w-full object-contain sm:max-h-[80vh]"
+              />
 
-                <Image
-                  src={
-                    image
-                  }
-                  alt={`${product.name} ${
-                    index +
-                    1
-                  }`}
-                  fill
-                  sizes="(max-width: 1024px) 50vw, 32vw"
-                  priority={
-                    index ===
-                    0
-                  }
-                  className="object-cover"
-                />
+            </div>
 
-              </div>
-            );
-          }
+
+            {/* VIDEO CAPTION */}
+
+            <p className="mt-4 text-center text-[8px] tracking-[0.3em] text-gray-400 sm:mt-5 sm:text-[9px]">
+              LUMÉRA — THE DETAILS
+            </p>
+
+          </section>
         )}
 
       </div>
 
-      {/* PRODUCT INFO */}
-      <div className="lg:sticky lg:top-10 lg:self-start">
 
-        <p className="text-[10px] tracking-[0.3em] text-gray-400">
+      {/* ========================================
+          RIGHT — PRODUCT INFO
+      ======================================== */}
+
+      <div className="min-w-0 lg:sticky lg:top-10 lg:self-start">
+
+        <p className="text-[8px] tracking-[0.3em] text-gray-400 sm:text-[10px]">
           LUMÉRA COLLECTION
         </p>
 
-        <h1 className="mt-4 font-serif text-4xl">
+        <h1 className="mt-3 font-serif text-3xl sm:mt-4 sm:text-4xl">
           {product.name}
         </h1>
 
-        <p className="mt-4 text-sm">
+        <p className="mt-3 text-sm sm:mt-4">
           {formatUSD(
             Number(
               product.price
@@ -330,48 +380,54 @@ export default function ProductDetails({
           USD
         </p>
 
-        {/* COLOR */}
-        <div className="mt-10 border-t border-black/10 pt-7">
 
-          <p className="text-xs tracking-[0.18em]">
+        {/* ========================================
+            COLOR
+        ======================================== */}
+
+        <div className="mt-7 border-t border-black/10 pt-6 sm:mt-10 sm:pt-7">
+
+          <p className="text-[10px] tracking-[0.18em] sm:text-xs">
             COLOR
           </p>
 
-          <p className="mt-3 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-600 sm:mt-3">
             Ivory
           </p>
 
         </div>
 
-        {/* SIZE */}
-        <div className="mt-8">
 
-          <div className="flex items-center justify-between">
+        {/* ========================================
+            SIZE
+        ======================================== */}
 
-            <p className="text-xs tracking-[0.18em]">
+        <div className="mt-7 sm:mt-8">
+
+          <div className="flex items-center justify-between gap-3">
+
+            <p className="text-[10px] tracking-[0.18em] sm:text-xs">
               SIZE
             </p>
 
             {selectedSize && (
-              <p className="text-xs text-gray-400">
+              <p className="text-[10px] text-gray-400 sm:text-xs">
                 Selected:{" "}
-                {
-                  selectedSize
-                }
+                {selectedSize}
               </p>
             )}
 
           </div>
 
-          <div className="mt-4 grid grid-cols-5 gap-2">
+
+          <div className="mt-3 grid grid-cols-5 gap-1.5 sm:mt-4 sm:gap-2">
 
             {product.sizes.map(
               (size) => {
+
                 const variant =
                   variants.find(
-                    (
-                      item
-                    ) =>
+                    (item) =>
                       item.size ===
                       size
                   );
@@ -381,8 +437,7 @@ export default function ProductDetails({
                   0;
 
                 const soldOut =
-                  stock <=
-                  0;
+                  stock <= 0;
 
                 const selected =
                   selectedSize ===
@@ -390,9 +445,7 @@ export default function ProductDetails({
 
                 return (
                   <button
-                    key={
-                      size
-                    }
+                    key={size}
                     type="button"
                     disabled={
                       soldOut
@@ -402,7 +455,7 @@ export default function ProductDetails({
                         size
                       )
                     }
-                    className={`relative min-h-[64px] border px-2 py-2 transition ${
+                    className={`relative min-h-[58px] border px-1 py-2 transition sm:min-h-[64px] sm:px-2 ${
                       soldOut
                         ? "cursor-not-allowed border-black/10 bg-gray-100 text-gray-300"
                         : selected
@@ -411,14 +464,12 @@ export default function ProductDetails({
                     }`}
                   >
 
-                    <span className="block text-xs">
-                      {
-                        size
-                      }
+                    <span className="block text-[10px] sm:text-xs">
+                      {size}
                     </span>
 
                     <span
-                      className={`mt-1 block text-[9px] ${
+                      className={`mt-1 block text-[7px] sm:text-[9px] ${
                         selected
                           ? "text-white/70"
                           : soldOut
@@ -438,19 +489,19 @@ export default function ProductDetails({
 
           </div>
 
-          {/* SELECTED SIZE STOCK */}
-          {selectedSize && (
-            <div className="mt-4 flex items-center justify-between">
 
-              <p className="text-xs text-gray-500">
+          {/* SELECTED SIZE STOCK */}
+
+          {selectedSize && (
+            <div className="mt-3 flex items-center justify-between gap-3 sm:mt-4">
+
+              <p className="text-[10px] text-gray-500 sm:text-xs">
                 Size{" "}
-                {
-                  selectedSize
-                }
+                {selectedSize}
               </p>
 
               <p
-                className={`text-xs ${
+                className={`text-[10px] sm:text-xs ${
                   selectedStock <=
                   2
                     ? "font-medium text-black"
@@ -472,14 +523,18 @@ export default function ProductDetails({
 
         </div>
 
-        {/* QUANTITY */}
-        <div className="mt-8">
 
-          <p className="text-xs tracking-[0.18em]">
+        {/* ========================================
+            QUANTITY
+        ======================================== */}
+
+        <div className="mt-7 sm:mt-8">
+
+          <p className="text-[10px] tracking-[0.18em] sm:text-xs">
             QUANTITY
           </p>
 
-          <div className="mt-4 flex items-center gap-5">
+          <div className="mt-3 flex flex-wrap items-center gap-3 sm:mt-4 sm:gap-5">
 
             <div className="flex w-fit items-center border border-black/20">
 
@@ -492,15 +547,13 @@ export default function ProductDetails({
                   quantity <=
                   1
                 }
-                className="h-12 w-12 text-lg disabled:cursor-not-allowed disabled:text-gray-300"
+                className="h-11 w-10 text-lg disabled:cursor-not-allowed disabled:text-gray-300 sm:h-12 sm:w-12"
               >
                 −
               </button>
 
-              <span className="flex h-12 w-12 items-center justify-center text-sm">
-                {
-                  quantity
-                }
+              <span className="flex h-11 w-10 items-center justify-center text-sm sm:h-12 sm:w-12">
+                {quantity}
               </span>
 
               <button
@@ -513,7 +566,7 @@ export default function ProductDetails({
                   quantity >=
                     selectedStock
                 }
-                className="h-12 w-12 text-lg disabled:cursor-not-allowed disabled:text-gray-300"
+                className="h-11 w-10 text-lg disabled:cursor-not-allowed disabled:text-gray-300 sm:h-12 sm:w-12"
               >
                 +
               </button>
@@ -523,7 +576,7 @@ export default function ProductDetails({
             {selectedSize &&
               quantity >=
                 selectedStock && (
-                <p className="text-xs text-gray-400">
+                <p className="text-[10px] text-gray-400 sm:text-xs">
                   Maximum
                   available
                   quantity
@@ -534,18 +587,21 @@ export default function ProductDetails({
 
         </div>
 
-        {/* ADD TO BAG */}
+
+        {/* ========================================
+            ADD TO BAG
+        ======================================== */}
+
         <button
           type="button"
           disabled={
             !selectedSize ||
-            selectedStock <=
-              0
+            selectedStock <= 0
           }
           onClick={
             handleAddToBag
           }
-          className={`mt-9 w-full py-5 text-xs tracking-[0.22em] transition ${
+          className={`mt-7 w-full py-4 text-[10px] tracking-[0.22em] transition sm:mt-9 sm:py-5 sm:text-xs ${
             selectedSize &&
             selectedStock >
               0
@@ -561,36 +617,51 @@ export default function ProductDetails({
               : "ADD TO BAG"}
         </button>
 
-        {/* WISHLIST */}
-        <button
-          type="button"
-          className="mt-3 w-full border border-black/20 py-5 text-xs tracking-[0.22em] transition hover:border-black"
-        >
-          ADD TO WISHLIST
-        </button>
 
-        {/* DESCRIPTION */}
-        <div className="mt-10 border-t border-black/10 pt-7">
+        {/* ========================================
+            WISHLIST
+        ======================================== */}
 
-          <p className="text-xs tracking-[0.18em]">
+        <div className="mt-2 sm:mt-3">
+
+          <ProductWishlistButton
+            productId={
+              product.id
+            }
+          />
+
+        </div>
+
+
+        {/* ========================================
+            DESCRIPTION
+        ======================================== */}
+
+        <div className="mt-8 border-t border-black/10 pt-6 sm:mt-10 sm:pt-7">
+
+          <p className="text-[10px] tracking-[0.18em] sm:text-xs">
             DETAILS
           </p>
 
-          <p className="mt-4 text-sm leading-7 text-gray-600">
+          <p className="mt-3 text-xs leading-6 text-gray-600 sm:mt-4 sm:text-sm sm:leading-7">
             {product.description ||
               "A timeless LUMÉRA piece designed with refined proportions and an elegant silhouette."}
           </p>
 
         </div>
 
-        {/* AVAILABILITY */}
-        <div className="mt-7 border-t border-black/10 pt-7">
 
-          <p className="text-xs tracking-[0.18em]">
+        {/* ========================================
+            AVAILABILITY
+        ======================================== */}
+
+        <div className="mt-6 border-t border-black/10 pt-6 sm:mt-7 sm:pt-7">
+
+          <p className="text-[10px] tracking-[0.18em] sm:text-xs">
             AVAILABILITY
           </p>
 
-          <p className="mt-4 text-sm text-gray-600">
+          <p className="mt-3 text-xs text-gray-600 sm:mt-4 sm:text-sm">
             {totalStock >
             0
               ? `${totalStock} pieces available`

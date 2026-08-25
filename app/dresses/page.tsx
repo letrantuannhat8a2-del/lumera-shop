@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import Header from "../components/Header";
+import WishlistButton from "../components/WishlistButton";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
 
 type Variant = {
@@ -27,16 +28,10 @@ export default async function DressesPage() {
       created_at
       `
     )
-    .eq(
-      "is_active",
-      true
-    )
-    .order(
-      "created_at",
-      {
-        ascending: true,
-      }
-    );
+    .eq("is_active", true)
+    .order("created_at", {
+      ascending: true,
+    });
 
   if (productError) {
     console.error(
@@ -50,9 +45,7 @@ export default async function DressesPage() {
     data: variants,
   } = await supabaseAdmin
     .from("product_variants")
-    .select(
-      "product_id, stock"
-    );
+    .select("product_id, stock");
 
   const formatUSD = (
     value: number
@@ -71,17 +64,17 @@ export default async function DressesPage() {
       <Header active="dresses" />
 
       {/* TITLE */}
-      <section className="px-12 pb-12 pt-16">
+      <section className="px-5 pb-10 pt-12 sm:px-8 sm:pb-12 sm:pt-14 lg:px-12 lg:pb-12 lg:pt-16">
 
-        <p className="text-[10px] tracking-[0.32em] text-gray-400">
+        <p className="text-[9px] tracking-[0.32em] text-gray-400 sm:text-[10px]">
           LUMÉRA COLLECTION
         </p>
 
-        <h1 className="mt-4 font-serif text-5xl">
+        <h1 className="mt-3 font-serif text-4xl sm:mt-4 sm:text-5xl">
           Dresses
         </h1>
 
-        <p className="mt-5 max-w-xl text-sm leading-7 text-gray-500">
+        <p className="mt-4 max-w-xl text-xs leading-6 text-gray-500 sm:mt-5 sm:text-sm sm:leading-7">
           Discover refined silhouettes
           designed with understated
           elegance and timeless femininity.
@@ -90,14 +83,14 @@ export default async function DressesPage() {
       </section>
 
       {/* PRODUCTS */}
-      <section className="px-12 pb-28">
+      <section className="px-5 pb-20 sm:px-8 sm:pb-24 lg:px-12 lg:pb-28">
 
         {!products ||
         products.length === 0 ? (
 
-          <div className="border-t border-black/10 py-24 text-center">
+          <div className="border-t border-black/10 py-20 text-center sm:py-24">
 
-            <p className="font-serif text-2xl">
+            <p className="font-serif text-xl sm:text-2xl">
               No products available
             </p>
 
@@ -105,10 +98,11 @@ export default async function DressesPage() {
 
         ) : (
 
-          <div className="grid grid-cols-1 gap-x-5 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 sm:gap-y-14 lg:grid-cols-3 xl:grid-cols-4">
 
             {products.map(
               (product) => {
+
                 const productStock =
                   (
                     variants as Variant[] | null
@@ -131,84 +125,115 @@ export default async function DressesPage() {
                     ) ?? 0;
 
                 return (
-                  <Link
-                    key={
-                      product.id
-                    }
-                    href={`/dresses/${product.slug}`}
-                    className="group block"
+
+                  // =========================
+                  // PRODUCT CARD
+                  // =========================
+
+                  <div
+                    key={product.id}
+                    className="group relative min-w-0"
                   >
 
-                    {/* IMAGE */}
-                    <div className="relative aspect-[3/4] overflow-hidden bg-[#eee9e3]">
+                    {/* PRODUCT LINK */}
 
-                      {product.image_1 ? (
+                    <Link
+                      href={`/dresses/${product.slug}`}
+                      className="block"
+                    >
 
-                        <Image
-                          src={
-                            product.image_1
-                          }
-                          alt={
-                            product.name
-                          }
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                          className="object-cover transition duration-500 group-hover:scale-[1.02]"
-                        />
+                      {/* IMAGE */}
 
-                      ) : (
+                      <div className="relative aspect-[3/4] overflow-hidden bg-[#eee9e3]">
 
-                        <div className="flex h-full items-center justify-center">
+                        {product.image_1 ? (
 
-                          <p className="text-[9px] tracking-[0.25em] text-gray-400">
-                            IMAGE COMING SOON
+                          <Image
+                            src={
+                              product.image_1
+                            }
+                            alt={
+                              product.name
+                            }
+                            fill
+                            sizes="
+                              (max-width: 640px) 50vw,
+                              (max-width: 1024px) 50vw,
+                              (max-width: 1280px) 33vw,
+                              25vw
+                            "
+                            className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                          />
+
+                        ) : (
+
+                          <div className="flex h-full items-center justify-center">
+
+                            <p className="px-2 text-center text-[8px] tracking-[0.2em] text-gray-400 sm:text-[9px] sm:tracking-[0.25em]">
+                              IMAGE COMING SOON
+                            </p>
+
+                          </div>
+
+                        )}
+
+                        {productStock ===
+                          0 && (
+
+                          <div className="absolute inset-x-0 bottom-0 bg-white/90 py-2 text-center sm:py-3">
+
+                            <p className="text-[7px] tracking-[0.18em] sm:text-[9px] sm:tracking-[0.2em]">
+                              SOLD OUT
+                            </p>
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+
+                      {/* INFO */}
+
+                      <div className="mt-3 flex items-start justify-between gap-2 sm:mt-5 sm:gap-5">
+
+                        <div className="min-w-0">
+
+                          <h2 className="truncate font-serif text-base sm:text-xl">
+                            {
+                              product.name
+                            }
+                          </h2>
+
+                          <p className="mt-1 text-[9px] text-gray-400 sm:mt-2 sm:text-xs">
+                            Ivory
                           </p>
 
                         </div>
 
-                      )}
-
-                      {productStock ===
-                        0 && (
-                        <div className="absolute inset-x-0 bottom-0 bg-white/90 py-3 text-center">
-
-                          <p className="text-[9px] tracking-[0.2em]">
-                            SOLD OUT
-                          </p>
-
-                        </div>
-                      )}
-
-                    </div>
-
-                    {/* INFO */}
-                    <div className="mt-5 flex items-start justify-between gap-5">
-
-                      <div>
-
-                        <h2 className="font-serif text-xl">
-                          {
-                            product.name
-                          }
-                        </h2>
-
-                        <p className="mt-2 text-xs text-gray-400">
-                          Ivory
+                        <p className="shrink-0 text-[10px] sm:text-sm">
+                          {formatUSD(
+                            Number(
+                              product.price
+                            )
+                          )}
                         </p>
 
                       </div>
 
-                      <p className="text-sm">
-                        {formatUSD(
-                          Number(
-                            product.price
-                          )
-                        )}
-                      </p>
+                    </Link>
 
-                    </div>
 
-                  </Link>
+                    {/* WISHLIST */}
+
+                    <WishlistButton
+                      productId={
+                        product.id
+                      }
+                    />
+
+                  </div>
+
                 );
               }
             )}
