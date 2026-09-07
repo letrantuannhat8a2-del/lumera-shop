@@ -1,15 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import ProductWishlistButton from "../components/ProductWishlistButton";
 import { useCart } from "../context/CartContext";
+
+type ProductColor = {
+  name: string;
+  hex: string;
+};
 
 type Product = {
   id: string;
   name: string;
   slug: string;
+
   price: number;
   currency: string;
 
@@ -21,9 +27,13 @@ type Product = {
   image_4: string | null;
   image_5: string | null;
 
+  images?: string[];
+
   video_url: string | null;
 
   sizes: string[];
+
+  colors: ProductColor[];
 
   stock: number;
 };
@@ -31,6 +41,7 @@ type Product = {
 type ProductVariant = {
   size: string;
   stock: number;
+  color: string;
 };
 
 type ProductDetailsProps = {
@@ -42,24 +53,86 @@ export default function ProductDetails({
   product,
   variants,
 }: ProductDetailsProps) {
-  const { addToCart } = useCart();
+  const { addToCart } =
+    useCart();
 
-  const [selectedSize, setSelectedSize] =
+  // ========================================
+  // INITIAL COLOR
+  // ========================================
+
+  const initialColor =
+    product.colors.length > 0
+      ? product.colors[0].name
+      : "";
+
+  const [
+    selectedColor,
+    setSelectedColor,
+  ] =
+    useState(
+      initialColor
+    );
+
+  const [
+    selectedSize,
+    setSelectedSize,
+  ] =
     useState("");
 
-  const [quantity, setQuantity] =
+  const [
+    quantity,
+    setQuantity,
+  ] =
     useState(1);
 
-  const images = [
-    product.image_1,
-    product.image_2,
-    product.image_3,
-    product.image_4,
-    product.image_5,
-  ].filter(
-    (image): image is string =>
-      Boolean(image)
-  );
+  // ========================================
+  // IMAGES
+  // ========================================
+
+  const images =
+    useMemo(
+      () => {
+        if (
+          Array.isArray(
+            product.images
+          ) &&
+          product.images.length >
+            0
+        ) {
+          return product.images;
+        }
+
+        return [
+          product.image_1,
+          product.image_2,
+          product.image_3,
+          product.image_4,
+          product.image_5,
+        ].filter(
+          (
+            image
+          ): image is string =>
+            Boolean(image)
+        );
+      },
+      [
+        product.images,
+        product.image_1,
+        product.image_2,
+        product.image_3,
+        product.image_4,
+        product.image_5,
+      ]
+    );
+
+  const mainImage =
+    images[0] ||
+    product.image_1 ||
+    "/image/image_1.png";
+
+  // ========================================
+  // FORMAT PRICE
+  // ========================================
 
   const formatUSD = (
     value: number
@@ -68,38 +141,107 @@ export default function ProductDetails({
       "en-US",
       {
         style: "currency",
+
         currency:
-          product.currency,
+          product.currency ||
+          "USD",
       }
-    ).format(value);
+    ).format(
+      value
+    );
 
   // ========================================
-  // SELECTED SIZE STOCK
+  // FIND VARIANT
+  // ========================================
+
+  function findVariant(
+    color: string,
+    size: string
+  ) {
+    return variants.find(
+      (variant) =>
+        variant.color ===
+          color &&
+        variant.size ===
+          size
+    );
+  }
+
+  // ========================================
+  // SELECTED VARIANT
   // ========================================
 
   const selectedVariant =
-    variants.find(
-      (variant) =>
-        variant.size ===
-        selectedSize
-    );
+    selectedSize
+      ? findVariant(
+          selectedColor,
+          selectedSize
+        )
+      : undefined;
 
   const selectedStock =
-    selectedVariant?.stock ?? 0;
+    selectedVariant?.stock ??
+    0;
 
   // ========================================
-  // TOTAL STOCK
+  // TOTAL STOCK FOR SELECTED COLOR
+  // ========================================
+
+  const selectedColorStock =
+    variants
+      .filter(
+        (variant) =>
+          variant.color ===
+          selectedColor
+      )
+      .reduce(
+        (
+          total,
+          variant
+        ) =>
+          total +
+          Number(
+            variant.stock
+          ),
+        0
+      );
+
+  // ========================================
+  // TOTAL PRODUCT STOCK
   // ========================================
 
   const totalStock =
     variants.reduce(
-      (total, variant) =>
+      (
+        total,
+        variant
+      ) =>
         total +
         Number(
           variant.stock
         ),
       0
     );
+
+  // ========================================
+  // SELECT COLOR
+  // ========================================
+
+  const handleSelectColor = (
+    color: string
+  ) => {
+    setSelectedColor(
+      color
+    );
+
+    setSelectedSize(
+      ""
+    );
+
+    setQuantity(
+      1
+    );
+  };
 
   // ========================================
   // SELECT SIZE
@@ -109,9 +251,9 @@ export default function ProductDetails({
     size: string
   ) => {
     const variant =
-      variants.find(
-        (item) =>
-          item.size === size
+      findVariant(
+        selectedColor,
+        size
       );
 
     if (
@@ -121,102 +263,138 @@ export default function ProductDetails({
       return;
     }
 
-    setSelectedSize(size);
-    setQuantity(1);
-  };
-
-  // ========================================
-  // INCREASE QUANTITY
-  // ========================================
-
-  const handleIncrease = () => {
-    if (!selectedSize) {
-      return;
-    }
-
-    if (
-      quantity >=
-      selectedStock
-    ) {
-      return;
-    }
+    setSelectedSize(
+      size
+    );
 
     setQuantity(
-      (current) =>
-        current + 1
+      1
     );
   };
 
   // ========================================
-  // DECREASE QUANTITY
+  // INCREASE
   // ========================================
 
-  const handleDecrease = () => {
-    setQuantity(
-      (current) =>
-        Math.max(
-          1,
-          current - 1
-        )
-    );
-  };
+  const handleIncrease =
+    () => {
+      if (
+        !selectedSize
+      ) {
+        return;
+      }
+
+      if (
+        quantity >=
+        selectedStock
+      ) {
+        return;
+      }
+
+      setQuantity(
+        (
+          current
+        ) =>
+          current + 1
+      );
+    };
+
+  // ========================================
+  // DECREASE
+  // ========================================
+
+  const handleDecrease =
+    () => {
+      setQuantity(
+        (
+          current
+        ) =>
+          Math.max(
+            1,
+            current - 1
+          )
+      );
+    };
 
   // ========================================
   // ADD TO BAG
   // ========================================
 
-  const handleAddToBag = () => {
-    if (!selectedSize) {
-      return;
-    }
+  const handleAddToBag =
+    () => {
+      if (
+        !selectedColor
+      ) {
+        return;
+      }
 
-    if (
-      selectedStock <= 0
-    ) {
+      if (
+        !selectedSize
+      ) {
+        return;
+      }
+
+      if (
+        selectedStock <=
+        0
+      ) {
+        alert(
+          "This size is sold out."
+        );
+
+        return;
+      }
+
+      if (
+        quantity >
+        selectedStock
+      ) {
+        alert(
+          `Only ${selectedStock} item(s) left in ${selectedColor}, size ${selectedSize}.`
+        );
+
+        return;
+      }
+
+      addToCart({
+        id:
+          product.id,
+
+        slug:
+          product.slug,
+
+        name:
+          product.name,
+
+        price:
+          Number(
+            product.price
+          ),
+
+        image:
+          mainImage,
+
+        color:
+          selectedColor ||
+          "Default",
+
+        size:
+          selectedSize,
+
+        quantity,
+
+        stock:
+          selectedStock,
+      });
+
       alert(
-        "This size is sold out."
+        `${product.name} — ${selectedColor} — Size ${selectedSize} — Quantity ${quantity} added to bag.`
       );
+    };
 
-      return;
-    }
-
-    if (
-      quantity >
-      selectedStock
-    ) {
-      alert(
-        `Only ${selectedStock} item(s) left in size ${selectedSize}.`
-      );
-
-      return;
-    }
-
-    addToCart({
-      id: product.id,
-
-      name: product.name,
-
-      price:
-        Number(
-          product.price
-        ),
-
-      image:
-        product.image_1 ||
-        "/image/image_1.png",
-
-      size: selectedSize,
-
-      quantity,
-
-      stock:
-        selectedStock,
-    });
-
-    alert(
-      `${product.name} — Size ${selectedSize} — Quantity ${quantity} added to bag.`
-    );
-  };
+  // ========================================
+  // PAGE
+  // ========================================
 
   return (
     <section className="grid min-w-0 grid-cols-1 gap-8 px-4 py-6 sm:gap-10 sm:px-6 sm:py-8 lg:grid-cols-[1.5fr_0.7fr] lg:gap-12 lg:px-12 lg:py-10">
@@ -227,14 +405,13 @@ export default function ProductDetails({
 
       <div className="min-w-0">
 
-        {/* ========================================
-            PRODUCT IMAGES
-        ======================================== */}
-
         <div className="grid grid-cols-2 gap-2 sm:gap-4">
 
           {images.map(
-            (image, index) => {
+            (
+              image,
+              index
+            ) => {
 
               const isLastOddImage =
                 images.length %
@@ -249,15 +426,20 @@ export default function ProductDetails({
               ) {
                 return (
                   <div
-                    key={image}
+                    key={
+                      `${image}-${index}`
+                    }
                     className="col-span-2 flex justify-center py-6 sm:py-10 lg:py-12"
                   >
                     <div className="relative aspect-[3/4] w-[72%] max-w-[560px] overflow-hidden bg-[#eee9e3] sm:w-[55%] lg:w-[48%]">
 
                       <Image
-                        src={image}
+                        src={
+                          image
+                        }
                         alt={`${product.name} ${
-                          index + 1
+                          index +
+                          1
                         }`}
                         fill
                         sizes="(max-width: 640px) 72vw, (max-width: 1024px) 55vw, 32vw"
@@ -271,19 +453,25 @@ export default function ProductDetails({
 
               return (
                 <div
-                  key={image}
+                  key={
+                    `${image}-${index}`
+                  }
                   className="relative aspect-[3/4] overflow-hidden bg-[#eee9e3]"
                 >
 
                   <Image
-                    src={image}
+                    src={
+                      image
+                    }
                     alt={`${product.name} ${
-                      index + 1
+                      index +
+                      1
                     }`}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 32vw"
                     priority={
-                      index === 0
+                      index ===
+                      0
                     }
                     className="object-cover"
                   />
@@ -295,20 +483,17 @@ export default function ProductDetails({
 
         </div>
 
-
         {/* ========================================
-            PRODUCT VIDEO
+            VIDEO
         ======================================== */}
 
         {product.video_url && (
           <section className="mt-14 sm:mt-20 lg:mt-24">
 
-            {/* VIDEO HEADING */}
-
             <div className="mb-7 px-2 text-center sm:mb-10">
 
               <p className="text-[8px] tracking-[0.35em] text-gray-400 sm:text-[9px]">
-                THE LUMÉRA STORY
+                THE VIREL STORY
               </p>
 
               <h2 className="mt-3 font-serif text-2xl sm:mt-4 sm:text-3xl md:text-4xl">
@@ -316,15 +501,13 @@ export default function ProductDetails({
               </h2>
 
               <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-gray-500 sm:mt-4 sm:text-sm">
-                Discover the movement,
-                details and silhouette
-                of this LUMÉRA piece.
+                Discover the
+                movement, details
+                and silhouette of
+                this VIREL piece.
               </p>
 
             </div>
-
-
-            {/* VIDEO */}
 
             <div className="relative w-full overflow-hidden bg-black">
 
@@ -333,8 +516,7 @@ export default function ProductDetails({
                   product.video_url
                 }
                 poster={
-                  product.image_1 ||
-                  undefined
+                  mainImage
                 }
                 controls
                 playsInline
@@ -344,18 +526,14 @@ export default function ProductDetails({
 
             </div>
 
-
-            {/* VIDEO CAPTION */}
-
             <p className="mt-4 text-center text-[8px] tracking-[0.3em] text-gray-400 sm:mt-5 sm:text-[9px]">
-              LUMÉRA — THE DETAILS
+              VIREL — THE DETAILS
             </p>
 
           </section>
         )}
 
       </div>
-
 
       {/* ========================================
           RIGHT — PRODUCT INFO
@@ -364,7 +542,7 @@ export default function ProductDetails({
       <div className="min-w-0 lg:sticky lg:top-10 lg:self-start">
 
         <p className="text-[8px] tracking-[0.3em] text-gray-400 sm:text-[10px]">
-          LUMÉRA COLLECTION
+          VIREL COLLECTION
         </p>
 
         <h1 className="mt-3 font-serif text-3xl sm:mt-4 sm:text-4xl">
@@ -376,10 +554,8 @@ export default function ProductDetails({
             Number(
               product.price
             )
-          )}{" "}
-          USD
+          )}
         </p>
-
 
         {/* ========================================
             COLOR
@@ -387,16 +563,120 @@ export default function ProductDetails({
 
         <div className="mt-7 border-t border-black/10 pt-6 sm:mt-10 sm:pt-7">
 
-          <p className="text-[10px] tracking-[0.18em] sm:text-xs">
-            COLOR
-          </p>
+          <div className="flex items-center justify-between">
 
-          <p className="mt-2 text-sm text-gray-600 sm:mt-3">
-            Ivory
-          </p>
+            <p className="text-[10px] tracking-[0.18em] sm:text-xs">
+              COLOR
+            </p>
+
+            {selectedColor && (
+              <p className="text-[10px] text-gray-400 sm:text-xs">
+                {
+                  selectedColor
+                }
+              </p>
+            )}
+
+          </div>
+
+          {product.colors.length >
+          0 ? (
+            <div className="mt-4 flex flex-wrap gap-3">
+
+              {product.colors.map(
+                (
+                  color
+                ) => {
+
+                  const selected =
+                    selectedColor ===
+                    color.name;
+
+                  const colorStock =
+                    variants
+                      .filter(
+                        (
+                          variant
+                        ) =>
+                          variant.color ===
+                          color.name
+                      )
+                      .reduce(
+                        (
+                          total,
+                          variant
+                        ) =>
+                          total +
+                          Number(
+                            variant.stock
+                          ),
+                        0
+                      );
+
+                  const soldOut =
+                    colorStock <=
+                    0;
+
+                  return (
+                    <button
+                      key={
+                        color.name
+                      }
+                      type="button"
+                      disabled={
+                        soldOut
+                      }
+                      onClick={() =>
+                        handleSelectColor(
+                          color.name
+                        )
+                      }
+                      className={`flex min-w-[120px] items-center gap-3 border px-4 py-3 text-left transition ${
+                        soldOut
+                          ? "cursor-not-allowed border-black/10 opacity-40"
+                          : selected
+                            ? "border-black"
+                            : "border-black/20 hover:border-black"
+                      }`}
+                    >
+
+                      <span
+                        className="h-5 w-5 shrink-0 rounded-full border border-black/15"
+                        style={{
+                          backgroundColor:
+                            color.hex,
+                        }}
+                      />
+
+                      <span className="min-w-0">
+
+                        <span className="block truncate text-[10px]">
+                          {
+                            color.name
+                          }
+                        </span>
+
+                        <span className="mt-1 block text-[8px] text-gray-400">
+                          {soldOut
+                            ? "SOLD OUT"
+                            : `${colorStock} AVAILABLE`}
+                        </span>
+
+                      </span>
+
+                    </button>
+                  );
+                }
+              )}
+
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-gray-600">
+              Default
+            </p>
+          )}
 
         </div>
-
 
         {/* ========================================
             SIZE
@@ -413,23 +693,25 @@ export default function ProductDetails({
             {selectedSize && (
               <p className="text-[10px] text-gray-400 sm:text-xs">
                 Selected:{" "}
-                {selectedSize}
+                {
+                  selectedSize
+                }
               </p>
             )}
 
           </div>
 
-
           <div className="mt-3 grid grid-cols-5 gap-1.5 sm:mt-4 sm:gap-2">
 
             {product.sizes.map(
-              (size) => {
+              (
+                size
+              ) => {
 
                 const variant =
-                  variants.find(
-                    (item) =>
-                      item.size ===
-                      size
+                  findVariant(
+                    selectedColor,
+                    size
                   );
 
                 const stock =
@@ -437,7 +719,8 @@ export default function ProductDetails({
                   0;
 
                 const soldOut =
-                  stock <= 0;
+                  stock <=
+                  0;
 
                 const selected =
                   selectedSize ===
@@ -445,7 +728,9 @@ export default function ProductDetails({
 
                 return (
                   <button
-                    key={size}
+                    key={
+                      size
+                    }
                     type="button"
                     disabled={
                       soldOut
@@ -465,7 +750,9 @@ export default function ProductDetails({
                   >
 
                     <span className="block text-[10px] sm:text-xs">
-                      {size}
+                      {
+                        size
+                      }
                     </span>
 
                     <span
@@ -489,25 +776,20 @@ export default function ProductDetails({
 
           </div>
 
-
-          {/* SELECTED SIZE STOCK */}
-
           {selectedSize && (
             <div className="mt-3 flex items-center justify-between gap-3 sm:mt-4">
 
               <p className="text-[10px] text-gray-500 sm:text-xs">
-                Size{" "}
-                {selectedSize}
+                {
+                  selectedColor
+                }{" "}
+                · Size{" "}
+                {
+                  selectedSize
+                }
               </p>
 
-              <p
-                className={`text-[10px] sm:text-xs ${
-                  selectedStock <=
-                  2
-                    ? "font-medium text-black"
-                    : "text-gray-500"
-                }`}
-              >
+              <p className="text-[10px] text-gray-500 sm:text-xs">
                 {
                   selectedStock
                 }{" "}
@@ -522,7 +804,6 @@ export default function ProductDetails({
           )}
 
         </div>
-
 
         {/* ========================================
             QUANTITY
@@ -553,7 +834,9 @@ export default function ProductDetails({
               </button>
 
               <span className="flex h-11 w-10 items-center justify-center text-sm sm:h-12 sm:w-12">
-                {quantity}
+                {
+                  quantity
+                }
               </span>
 
               <button
@@ -573,20 +856,9 @@ export default function ProductDetails({
 
             </div>
 
-            {selectedSize &&
-              quantity >=
-                selectedStock && (
-                <p className="text-[10px] text-gray-400 sm:text-xs">
-                  Maximum
-                  available
-                  quantity
-                </p>
-              )}
-
           </div>
 
         </div>
-
 
         {/* ========================================
             ADD TO BAG
@@ -595,13 +867,16 @@ export default function ProductDetails({
         <button
           type="button"
           disabled={
+            !selectedColor ||
             !selectedSize ||
-            selectedStock <= 0
+            selectedStock <=
+              0
           }
           onClick={
             handleAddToBag
           }
           className={`mt-7 w-full py-4 text-[10px] tracking-[0.22em] transition sm:mt-9 sm:py-5 sm:text-xs ${
+            selectedColor &&
             selectedSize &&
             selectedStock >
               0
@@ -609,14 +884,15 @@ export default function ProductDetails({
               : "cursor-not-allowed bg-gray-300 text-gray-500"
           }`}
         >
-          {!selectedSize
-            ? "SELECT A SIZE"
-            : selectedStock <=
-                0
-              ? "SOLD OUT"
-              : "ADD TO BAG"}
+          {!selectedColor
+            ? "SELECT A COLOR"
+            : !selectedSize
+              ? "SELECT A SIZE"
+              : selectedStock <=
+                  0
+                ? "SOLD OUT"
+                : "ADD TO BAG"}
         </button>
-
 
         {/* ========================================
             WISHLIST
@@ -632,7 +908,6 @@ export default function ProductDetails({
 
         </div>
 
-
         {/* ========================================
             DESCRIPTION
         ======================================== */}
@@ -645,11 +920,10 @@ export default function ProductDetails({
 
           <p className="mt-3 text-xs leading-6 text-gray-600 sm:mt-4 sm:text-sm sm:leading-7">
             {product.description ||
-              "A timeless LUMÉRA piece designed with refined proportions and an elegant silhouette."}
+              "A timeless VIREL piece designed with refined proportions and an elegant silhouette."}
           </p>
 
         </div>
-
 
         {/* ========================================
             AVAILABILITY
@@ -662,10 +936,16 @@ export default function ProductDetails({
           </p>
 
           <p className="mt-3 text-xs text-gray-600 sm:mt-4 sm:text-sm">
-            {totalStock >
-            0
-              ? `${totalStock} pieces available`
-              : "Out of stock"}
+
+            {selectedColor
+              ? selectedColorStock >
+                0
+                ? `${selectedColorStock} pieces available in ${selectedColor}`
+                : `${selectedColor} is out of stock`
+              : totalStock > 0
+                ? `${totalStock} pieces available`
+                : "Out of stock"}
+
           </p>
 
         </div>

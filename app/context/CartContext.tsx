@@ -10,13 +10,18 @@ import {
 export type CartItem = {
   id: string;
   name: string;
+  slug: string;
   price: number;
   image: string;
+
+  color: string;
   size: string;
+
   quantity: number;
 
   stock?: number;
 };
+
 type CartContextType = {
   cart: CartItem[];
   cartCount: number;
@@ -26,17 +31,21 @@ type CartContextType = {
 
   increaseQuantity: (
     id: string,
+    color: string,
     size: string
   ) => void;
+
   clearCart: () => void;
 
   decreaseQuantity: (
     id: string,
+    color: string,
     size: string
   ) => void;
 
   removeItem: (
     id: string,
+    color: string,
     size: string
   ) => void;
 };
@@ -50,17 +59,52 @@ export function CartProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [cart, setCart] =
+    useState<CartItem[]>([]);
 
-  // Đọc giỏ hàng cũ
+  const [loaded, setLoaded] =
+    useState(false);
+
+  // ========================================
+  // ĐỌC GIỎ HÀNG CŨ
+  // ========================================
+
   useEffect(() => {
     const savedCart =
       localStorage.getItem("cart");
 
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        const parsed =
+          JSON.parse(savedCart);
+
+        if (Array.isArray(parsed)) {
+          const migrated =
+            parsed
+              .map((item) => ({
+                ...item,
+
+                // Cart cũ chưa có color
+                // → dùng Ivory mặc định
+                color:
+                  typeof item.color ===
+                  "string"
+                    ? item.color
+                    : "Ivory",
+              }))
+              .filter(
+                (item) =>
+                  item &&
+                  typeof item.id ===
+                    "string" &&
+                  typeof item.size ===
+                    "string"
+              );
+
+          setCart(migrated);
+        } else {
+          setCart([]);
+        }
       } catch {
         setCart([]);
       }
@@ -69,9 +113,14 @@ export function CartProvider({
     setLoaded(true);
   }, []);
 
-  // Lưu giỏ hàng
+  // ========================================
+  // LƯU GIỎ HÀNG
+  // ========================================
+
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded) {
+      return;
+    }
 
     localStorage.setItem(
       "cart",
@@ -79,93 +128,176 @@ export function CartProvider({
     );
   }, [cart, loaded]);
 
+  // ========================================
   // ADD TO BAG
-  const addToCart = (item: CartItem) => {
+  // ========================================
+
+  const addToCart = (
+    item: CartItem
+  ) => {
     setCart((currentCart) => {
+
       const existingItem =
         currentCart.find(
           (cartItem) =>
-            cartItem.id === item.id &&
-            cartItem.size === item.size
+            cartItem.id ===
+              item.id &&
+            cartItem.color ===
+              item.color &&
+            cartItem.size ===
+              item.size
         );
 
+      // ====================================
+      // ĐÃ CÓ CÙNG:
+      // PRODUCT + COLOR + SIZE
+      // ====================================
+
       if (existingItem) {
+        const maxStock =
+          existingItem.stock ??
+          item.stock ??
+          Number.POSITIVE_INFINITY;
+
+        const requestedQuantity =
+          existingItem.quantity +
+          item.quantity;
+
+        const nextQuantity =
+          Math.min(
+            requestedQuantity,
+            maxStock
+          );
+
         return currentCart.map(
           (cartItem) =>
-            cartItem.id === item.id &&
-            cartItem.size === item.size
+            cartItem.id ===
+              item.id &&
+            cartItem.color ===
+              item.color &&
+            cartItem.size ===
+              item.size
               ? {
                   ...cartItem,
+
                   quantity:
-                    cartItem.quantity +
-                    item.quantity,
+                    nextQuantity,
+
+                  stock:
+                    existingItem.stock ??
+                    item.stock,
                 }
               : cartItem
         );
       }
 
-      return [...currentCart, item];
-    });
-  };
-
-  // TĂNG SỐ LƯỢNG
- const increaseQuantity = (
-  id: string,
-  size: string
-) => {
-  setCart((current) =>
-    current.map((item) => {
-      if (
-        item.id !== id ||
-        item.size !== size
-      ) {
-        return item;
-      }
+      // ====================================
+      // SẢN PHẨM MỚI
+      // ====================================
 
       const maxStock =
         item.stock ??
         Number.POSITIVE_INFINITY;
 
-      if (
-        item.quantity >=
-        maxStock
-      ) {
-        return item;
-      }
+      const safeQuantity =
+        Math.min(
+          item.quantity,
+          maxStock
+        );
 
-      return {
-        ...item,
-        quantity:
-          item.quantity + 1,
-      };
-    })
-  );
-};
+      return [
+        ...currentCart,
+        {
+          ...item,
 
-  // GIẢM SỐ LƯỢNG
-  const decreaseQuantity = (
+          quantity:
+            safeQuantity,
+        },
+      ];
+    });
+  };
+
+  // ========================================
+  // TĂNG SỐ LƯỢNG
+  // ========================================
+
+  const increaseQuantity = (
     id: string,
+    color: string,
     size: string
   ) => {
-    setCart((currentCart) =>
-      currentCart.map((item) =>
-        item.id === id &&
-        item.size === size
-          ? {
-              ...item,
-              quantity: Math.max(
-                1,
-                item.quantity - 1
-              ),
-            }
-          : item
-      )
+    setCart((current) =>
+      current.map((item) => {
+
+        if (
+          item.id !== id ||
+          item.color !== color ||
+          item.size !== size
+        ) {
+          return item;
+        }
+
+        const maxStock =
+          item.stock ??
+          Number.POSITIVE_INFINITY;
+
+        if (
+          item.quantity >=
+          maxStock
+        ) {
+          return item;
+        }
+
+        return {
+          ...item,
+
+          quantity:
+            item.quantity + 1,
+        };
+      })
     );
   };
 
+  // ========================================
+  // GIẢM SỐ LƯỢNG
+  // ========================================
+
+  const decreaseQuantity = (
+    id: string,
+    color: string,
+    size: string
+  ) => {
+    setCart((currentCart) =>
+      currentCart.map((item) => {
+
+        if (
+          item.id !== id ||
+          item.color !== color ||
+          item.size !== size
+        ) {
+          return item;
+        }
+
+        return {
+          ...item,
+
+          quantity:
+            Math.max(
+              1,
+              item.quantity - 1
+            ),
+        };
+      })
+    );
+  };
+
+  // ========================================
   // XÓA SẢN PHẨM
+  // ========================================
+
   const removeItem = (
     id: string,
+    color: string,
     size: string
   ) => {
     setCart((currentCart) =>
@@ -173,27 +305,48 @@ export function CartProvider({
         (item) =>
           !(
             item.id === id &&
+            item.color === color &&
             item.size === size
           )
       )
     );
   };
 
-  const cartCount = cart.reduce(
-    (total, item) =>
-      total + item.quantity,
-    0
-  );
+  // ========================================
+  // CART COUNT
+  // ========================================
 
-  const subtotal = cart.reduce(
-    (total, item) =>
-      total +
-      item.price * item.quantity,
-    0
-  );
+  const cartCount =
+    cart.reduce(
+      (total, item) =>
+        total + item.quantity,
+      0
+    );
+
+  // ========================================
+  // SUBTOTAL
+  // ========================================
+
+  const subtotal =
+    cart.reduce(
+      (total, item) =>
+        total +
+        item.price *
+          item.quantity,
+      0
+    );
+
+  // ========================================
+  // CLEAR CART
+  // ========================================
+
   const clearCart = () => {
-  setCart([]);
-};
+    setCart([]);
+  };
+
+  // ========================================
+  // PROVIDER
+  // ========================================
 
   return (
     <CartContext.Provider
@@ -212,6 +365,10 @@ export function CartProvider({
     </CartContext.Provider>
   );
 }
+
+// ========================================
+// USE CART
+// ========================================
 
 export function useCart() {
   const context =

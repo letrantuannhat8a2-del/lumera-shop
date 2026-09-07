@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "../../../../lib/supabase/sever";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { createClient } from "@/app/lib/supabase/sever";
+import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 
 type RouteContext = {
   params: Promise<{
@@ -14,46 +14,123 @@ export async function GET(
   context: RouteContext
 ) {
   try {
-    const { orderNumber } = await context.params;
+    // ==========================================
+    // 1. GET CURRENT LOGGED-IN USER
+    // ==========================================
 
-    if (!orderNumber) {
+    const supabase =
+      await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } =
+      await supabase.auth.getUser();
+
+    if (userError) {
+      console.error(
+        "Get current user error:",
+        userError
+      );
+    }
+
+    if (!user?.id || !user.email) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const accountEmail =
+      user.email.trim().toLowerCase();
+
+    // ==========================================
+    // 2. GET ORDER NUMBER FROM URL
+    // ==========================================
+
+    const { orderNumber } =
+      await context.params;
+
+    const safeOrderNumber =
+      typeof orderNumber === "string"
+        ? orderNumber.trim()
+        : "";
+
+    if (!safeOrderNumber) {
       return NextResponse.json(
         {
           error:
             "Order number is required.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    const supabase = await createClient();
+    // ==========================================
+    // 3. LOAD ONLY THIS USER'S ORDER
+    // ==========================================
 
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const { data: order, error } =
+      data: order,
+      error: orderError,
+    } =
       await supabaseAdmin
         .from("orders")
-        .select("*")
+        .select(`
+          id,
+          order_number,
+          created_at,
+
+          total,
+          currency,
+
+          payment_status,
+          order_status,
+
+          items,
+
+          email,
+
+          first_name,
+          last_name,
+          phone,
+
+          country,
+          address_line1,
+          address_line2,
+          city,
+          state_region,
+          postal_code,
+
+          shipping_method,
+
+          subtotal,
+          shipping_fee
+        `)
+        .eq(
+          "user_id",
+          user.id
+        )
         .eq(
           "order_number",
-          orderNumber
+          safeOrderNumber
         )
-        .eq("email", user.email)
         .maybeSingle();
 
-    if (error) {
+    // ==========================================
+    // 4. DATABASE ERROR
+    // ==========================================
+
+    if (orderError) {
       console.error(
         "Failed to load order:",
-        error
+        orderError
       );
 
       return NextResponse.json(
@@ -61,28 +138,109 @@ export async function GET(
           error:
             "Failed to load order.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
+
+    // ==========================================
+    // 5. ORDER NOT FOUND
+    // ==========================================
 
     if (!order) {
       return NextResponse.json(
         {
-          error: "Order not found.",
+          error:
+            "Order not found.",
         },
-        { status: 404 }
+        {
+          status: 404,
+        }
       );
     }
+
+    // ==========================================
+    // 6. NORMALIZE ITEMS
+    // ==========================================
+
+    const safeItems =
+      Array.isArray(order.items)
+        ? order.items
+        : [];
+
+    // ==========================================
+    // 7. SHIPPING ADDRESS
+    // ==========================================
+
+    const shippingAddress = {
+      name:
+        `${order.first_name ?? ""} ${
+          order.last_name ?? ""
+        }`.trim(),
+
+      address:
+        [
+          order.address_line1,
+          order.address_line2,
+        ]
+          .filter(Boolean)
+          .join(", "),
+
+      city:
+        order.city ?? "",
+
+      province:
+        order.state_region ?? "",
+
+      postal_code:
+        order.postal_code ?? "",
+
+      country:
+        order.country ?? "",
+
+      phone:
+        order.phone ?? "",
+    };
+
+    // ==========================================
+    // 8. RETURN
+    // ==========================================
 
     return NextResponse.json(
       {
         success: true,
-        email: user.email,
-        order,
+
+        email:
+          accountEmail,
+
+        order: {
+          ...order,
+
+          items:
+            safeItems,
+
+          shipping_address:
+            shippingAddress,
+
+          customer_name:
+            `${order.first_name ?? ""} ${
+              order.last_name ?? ""
+            }`.trim(),
+        },
       },
       {
+        status: 200,
+
         headers: {
-          "Cache-Control": "no-store",
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+          Pragma:
+            "no-cache",
+
+          Expires:
+            "0",
         },
       }
     );
@@ -97,7 +255,9 @@ export async function GET(
         error:
           "Something went wrong while loading the order.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

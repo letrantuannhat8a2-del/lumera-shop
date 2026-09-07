@@ -7,12 +7,15 @@ const nextConfig: NextConfig = {
     "192.168.1.8",
   ],
 
+  // Cho phép Next/Image hiển thị ảnh từ Supabase Storage
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname:
-          "iqbteqnoqrkvriniitcc.supabase.co",
+          "qcqztlraqtzhypkinrco.supabase.co",
+        pathname:
+          "/storage/v1/object/public/**",
       },
     ],
   },

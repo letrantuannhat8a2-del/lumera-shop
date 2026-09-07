@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { CartProvider } from "./context/CartContext";
-import TawkChat from "./components/TawkChat";
+import ChatBox from "./components/ChatBox";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,14 +17,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LUMÉRA | Luxury Dresses",
+  title: "VIREL | Bridal Shoes",
   description:
-    "Discover elegant luxury dresses from LUMÉRA.",
+    "Discover elegant bridal shoes from VIREL.",
 };
 
 export default function RootLayout({
   children,
-}: LayoutProps<"/">) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"
@@ -36,8 +38,8 @@ export default function RootLayout({
           {children}
         </CartProvider>
 
-        {/* TAWK.TO LIVE CHAT */}
-        <TawkChat />
+        {/* VIREL CUSTOMER SUPPORT */}
+        <ChatBox />
 
       </body>
     </html>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "../lib/supabase/sever";
-
+import SignOutButton from "./SignOutButton";
 export default async function AccountPage() {
   const supabase = await createClient();
 
@@ -10,10 +10,17 @@ export default async function AccountPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Không có session → quay lại trang đăng nhập
+  // ========================================
+  // REQUIRE LOGIN
+  // ========================================
+
   if (!user) {
     redirect("/account/login");
   }
+
+  // ========================================
+  // USER INFORMATION
+  // ========================================
 
   const firstName =
     user.user_metadata?.first_name || "";
@@ -32,18 +39,25 @@ export default async function AccountPage() {
     user.email?.split("@")[0] ||
     "Customer";
 
-  const email = user.email ?? "";
+  const email =
+    user.email ?? "";
+
+  // ========================================
+  // PAGE
+  // ========================================
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#f8f6f2] text-black">
+    <main className="min-h-screen overflow-x-hidden bg-[#fcf8f6] text-[#211d1d]">
 
       {/* ========================================
           HEADER
       ======================================== */}
 
-      <header className="border-b border-black/10 bg-[#f8f6f2]">
+      <header className="border-b border-[#211d1d]/10 bg-[#fcf8f6]">
 
         <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:min-h-24 sm:px-8 md:px-10">
+
+          {/* LOGO */}
 
           <Link
             href="/"
@@ -56,19 +70,22 @@ export default async function AccountPage() {
               sm:tracking-[0.25em]
             "
           >
-            LUMÉRA
+            VIREL
           </Link>
+
+
+          {/* NAVIGATION */}
 
           <div className="flex items-center gap-4 sm:gap-8">
 
             <Link
-              href="/"
+              href="/shop"
               className="
                 text-[8px]
                 tracking-[0.16em]
-                text-black/50
+                text-[#211d1d]/50
                 transition
-                hover:text-black
+                hover:text-[#211d1d]
                 sm:text-[10px]
                 sm:tracking-[0.2em]
               "
@@ -95,8 +112,8 @@ export default async function AccountPage() {
 
         <div className="max-w-2xl">
 
-          <p className="text-[8px] tracking-[0.35em] text-black/40 sm:text-[9px] sm:tracking-[0.4em]">
-            MY ACCOUNT
+          <p className="text-[8px] tracking-[0.35em] text-[#a88989] sm:text-[9px] sm:tracking-[0.4em]">
+            VIREL · MY ACCOUNT
           </p>
 
           <h1 className="mt-4 font-serif text-4xl sm:mt-5 sm:text-5xl md:text-6xl">
@@ -107,7 +124,7 @@ export default async function AccountPage() {
             {userName}
           </p>
 
-          <p className="mt-1.5 break-all text-xs text-black/50 sm:mt-2 sm:text-sm">
+          <p className="mt-1.5 break-all text-xs text-[#756b6b] sm:mt-2 sm:text-sm">
             {email}
           </p>
 
@@ -118,7 +135,7 @@ export default async function AccountPage() {
             ACCOUNT MENU
         ======================================== */}
 
-        <div className="mt-12 border-t border-black/10 sm:mt-16">
+        <div className="mt-12 border-t border-[#211d1d]/10 sm:mt-16">
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 
@@ -134,7 +151,7 @@ export default async function AccountPage() {
                 relative
                 min-h-[300px]
                 border-b
-                border-black/10
+                border-[#211d1d]/10
                 p-7
                 transition
                 hover:bg-white
@@ -147,7 +164,7 @@ export default async function AccountPage() {
 
               <div className="flex items-start justify-between">
 
-                <p className="text-[9px] tracking-[0.35em] text-black/40">
+                <p className="text-[9px] tracking-[0.35em] text-[#756b6b]">
                   01 / ORDERS
                 </p>
 
@@ -165,22 +182,24 @@ export default async function AccountPage() {
 
               </div>
 
+
               <div className="mt-20 sm:mt-24">
 
                 <h2 className="font-serif text-3xl sm:text-4xl">
                   My Orders
                 </h2>
 
-                <p className="mt-4 max-w-sm text-sm leading-6 text-black/50">
+                <p className="mt-4 max-w-sm text-sm leading-6 text-[#756b6b]">
                   View your purchases, order status,
                   delivery progress and complete order details.
                 </p>
 
               </div>
 
+
               <div className="absolute bottom-7 left-7 sm:bottom-9 sm:left-9">
 
-                <span className="border-b border-black pb-1 text-[9px] tracking-[0.25em]">
+                <span className="border-b border-[#211d1d] pb-1 text-[9px] tracking-[0.25em]">
                   VIEW ORDERS
                 </span>
 
@@ -200,7 +219,7 @@ export default async function AccountPage() {
                 relative
                 min-h-[300px]
                 border-b
-                border-black/10
+                border-[#211d1d]/10
                 p-7
                 transition
                 hover:bg-white
@@ -213,7 +232,7 @@ export default async function AccountPage() {
 
               <div className="flex items-start justify-between">
 
-                <p className="text-[9px] tracking-[0.35em] text-black/40">
+                <p className="text-[9px] tracking-[0.35em] text-[#756b6b]">
                   02 / PROFILE
                 </p>
 
@@ -223,22 +242,24 @@ export default async function AccountPage() {
 
               </div>
 
+
               <div className="mt-20 sm:mt-24">
 
                 <h2 className="font-serif text-3xl sm:text-4xl">
                   Account Details
                 </h2>
 
-                <p className="mt-4 max-w-sm text-sm leading-6 text-black/50">
+                <p className="mt-4 max-w-sm text-sm leading-6 text-[#756b6b]">
                   Manage your personal information,
                   email address and password.
                 </p>
 
               </div>
 
+
               <div className="absolute bottom-7 left-7 sm:bottom-9 sm:left-9">
 
-                <span className="border-b border-black pb-1 text-[9px] tracking-[0.25em]">
+                <span className="border-b border-[#211d1d] pb-1 text-[9px] tracking-[0.25em]">
                   MANAGE PROFILE
                 </span>
 
@@ -258,7 +279,7 @@ export default async function AccountPage() {
                 relative
                 min-h-[300px]
                 border-b
-                border-black/10
+                border-[#211d1d]/10
                 p-7
                 transition
                 hover:bg-white
@@ -270,7 +291,7 @@ export default async function AccountPage() {
 
               <div className="flex items-start justify-between">
 
-                <p className="text-[9px] tracking-[0.35em] text-black/40">
+                <p className="text-[9px] tracking-[0.35em] text-[#756b6b]">
                   03 / DELIVERY
                 </p>
 
@@ -280,22 +301,24 @@ export default async function AccountPage() {
 
               </div>
 
+
               <div className="mt-20 sm:mt-24">
 
                 <h2 className="font-serif text-3xl sm:text-4xl">
                   Addresses
                 </h2>
 
-                <p className="mt-4 max-w-sm text-sm leading-6 text-black/50">
+                <p className="mt-4 max-w-sm text-sm leading-6 text-[#756b6b]">
                   Save and manage your delivery addresses
                   for a faster checkout experience.
                 </p>
 
               </div>
 
+
               <div className="absolute bottom-7 left-7 sm:bottom-9 sm:left-9">
 
-                <span className="border-b border-black pb-1 text-[9px] tracking-[0.25em]">
+                <span className="border-b border-[#211d1d] pb-1 text-[9px] tracking-[0.25em]">
                   MANAGE ADDRESSES
                 </span>
 
@@ -315,7 +338,7 @@ export default async function AccountPage() {
                 relative
                 min-h-[300px]
                 border-b
-                border-black/10
+                border-[#211d1d]/10
                 p-7
                 transition
                 hover:bg-white
@@ -328,7 +351,7 @@ export default async function AccountPage() {
 
               <div className="flex items-start justify-between">
 
-                <p className="text-[9px] tracking-[0.35em] text-black/40">
+                <p className="text-[9px] tracking-[0.35em] text-[#756b6b]">
                   04 / SAVED ITEMS
                 </p>
 
@@ -338,22 +361,24 @@ export default async function AccountPage() {
 
               </div>
 
+
               <div className="mt-20 sm:mt-24">
 
                 <h2 className="font-serif text-3xl sm:text-4xl">
                   Wishlist
                 </h2>
 
-                <p className="mt-4 max-w-sm text-sm leading-6 text-black/50">
-                  Keep your favorite LUMÉRA pieces saved
+                <p className="mt-4 max-w-sm text-sm leading-6 text-[#756b6b]">
+                  Keep your favorite VIREL pieces saved
                   for your next occasion.
                 </p>
 
               </div>
 
+
               <div className="absolute bottom-7 left-7 sm:bottom-9 sm:left-9">
 
-                <span className="border-b border-black pb-1 text-[9px] tracking-[0.25em]">
+                <span className="border-b border-[#211d1d] pb-1 text-[9px] tracking-[0.25em]">
                   VIEW WISHLIST
                 </span>
 
@@ -373,7 +398,7 @@ export default async function AccountPage() {
                 relative
                 min-h-[300px]
                 border-b
-                border-black/10
+                border-[#211d1d]/10
                 p-7
                 transition
                 hover:bg-white
@@ -386,7 +411,7 @@ export default async function AccountPage() {
 
               <div className="flex items-start justify-between">
 
-                <p className="text-[9px] tracking-[0.35em] text-black/40 sm:text-[9px]">
+                <p className="text-[9px] tracking-[0.35em] text-[#756b6b]">
                   05 / SUPPORT
                 </p>
 
@@ -396,22 +421,24 @@ export default async function AccountPage() {
 
               </div>
 
+
               <div className="mt-20 sm:mt-24">
 
                 <h2 className="font-serif text-3xl sm:text-4xl">
                   Need Help?
                 </h2>
 
-                <p className="mt-4 max-w-sm text-sm leading-6 text-black/50">
+                <p className="mt-4 max-w-sm text-sm leading-6 text-[#756b6b]">
                   Questions about your order, delivery,
-                  returns or your LUMÉRA experience?
+                  returns or your VIREL experience?
                 </p>
 
               </div>
 
+
               <div className="absolute bottom-7 left-7 sm:bottom-9 sm:left-9">
 
-                <span className="border-b border-black pb-1 text-[9px] tracking-[0.25em]">
+                <span className="border-b border-[#211d1d] pb-1 text-[9px] tracking-[0.25em]">
                   CONTACT SUPPORT
                 </span>
 
@@ -425,16 +452,16 @@ export default async function AccountPage() {
             ==================================== */}
 
             <Link
-              href="/dresses"
+              href="/shop"
               className="
                 group
                 relative
                 min-h-[300px]
-                bg-black
+                bg-[#211d1d]
                 p-7
                 text-white
                 transition
-                hover:bg-black/90
+                hover:bg-[#302828]
                 sm:min-h-[320px]
                 sm:p-9
                 lg:min-h-[340px]
@@ -444,7 +471,7 @@ export default async function AccountPage() {
               <div className="flex items-start justify-between">
 
                 <p className="text-[9px] tracking-[0.35em] text-white/50">
-                  06 / LUMÉRA
+                  06 / VIREL
                 </p>
 
                 <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">
@@ -453,6 +480,7 @@ export default async function AccountPage() {
 
               </div>
 
+
               <div className="mt-20 sm:mt-24">
 
                 <h2 className="font-serif text-3xl sm:text-4xl">
@@ -460,11 +488,12 @@ export default async function AccountPage() {
                 </h2>
 
                 <p className="mt-4 max-w-sm text-sm leading-6 text-white/60">
-                  Discover the latest silhouettes,
-                  timeless dresses and new LUMÉRA collections.
+                  Discover elegant silhouettes,
+                  refined bridal shoes and the latest VIREL collection.
                 </p>
 
               </div>
+
 
               <div className="absolute bottom-7 left-7 sm:bottom-9 sm:left-9">
 
@@ -480,19 +509,25 @@ export default async function AccountPage() {
 
         </div>
 
+{/* ========================================
+    SIGN OUT
+======================================== */}
 
+<div className="mt-8 max-w-md sm:mt-10">
+  <SignOutButton />
+</div>
         {/* ========================================
             FOOTER
         ======================================== */}
 
-        <div className="mt-12 border-t border-black/10 pt-6 sm:mt-16 sm:pt-8">
+        <div className="mt-12 border-t border-[#211d1d]/10 pt-6 sm:mt-16 sm:pt-8">
 
-          <p className="text-[8px] tracking-[0.22em] text-black/30 sm:text-[9px] sm:tracking-[0.25em]">
-            LUMÉRA CUSTOMER ACCOUNT
+          <p className="text-[8px] tracking-[0.22em] text-[#a88989] sm:text-[9px] sm:tracking-[0.25em]">
+            VIREL CUSTOMER ACCOUNT
           </p>
 
-          <p className="mt-2 max-w-xl text-xs leading-6 text-black/40 sm:mt-3 sm:text-sm">
-            Thank you for being part of LUMÉRA.
+          <p className="mt-2 max-w-xl text-xs leading-6 text-[#8d8080] sm:mt-3 sm:text-sm">
+            Thank you for being part of VIREL.
             Your account gives you access to your orders,
             personal information and saved items.
           </p>

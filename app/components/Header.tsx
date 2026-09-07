@@ -28,7 +28,7 @@ type SearchProduct = {
 export default function Header({
   active,
 }: {
-  active?: "dresses";
+  active?: "shop";
 }) {
   const { cartCount } = useCart();
 
@@ -423,7 +423,7 @@ export default function Header({
             md:text-4xl
           "
         >
-          LUMÉRA
+          VIREL
         </Link>
 
         {/* ==================================================
@@ -451,19 +451,19 @@ export default function Header({
           </Link>
 
           <Link
-            href="/dresses"
-            className={`
-              transition
-              hover:opacity-60
-              ${
-                active === "dresses"
-                  ? "border-b border-black pb-1"
-                  : ""
-              }
-            `}
-          >
-            Dresses
-          </Link>
+  href="/shop"
+  className={`
+    transition
+    hover:opacity-60
+    ${
+      active === "shop"
+        ? "border-b border-black pb-1"
+        : ""
+    }
+  `}
+>
+  Bridal Shoes
+</Link>
 
           <Link
             href="/collections"
@@ -910,27 +910,24 @@ export default function Header({
             >
               New Arrivals
             </Link>
-
-            <Link
-              href="/dresses"
-              onClick={
-                closeMobileMenu
-              }
-              className={`
-                border-b
-                border-black/10
-                py-4
-                font-serif
-                text-2xl
-                ${
-                  active === "dresses"
-                    ? "opacity-50"
-                    : ""
-                }
-              `}
-            >
-              Dresses
-            </Link>
+<Link
+  href="/shop"
+  onClick={closeMobileMenu}
+  className={`
+    border-b
+    border-black/10
+    py-4
+    font-serif
+    text-2xl
+    ${
+      active === "shop"
+        ? "opacity-50"
+        : ""
+    }
+  `}
+>
+  Bridal Shoes
+</Link>
 
             <Link
               href="/collections"
@@ -1177,7 +1174,7 @@ export default function Header({
                     event.target.value
                   )
                 }
-                placeholder="Search dresses..."
+                placeholder="Search bridal shoes..."
                 className="
                   min-w-0
                   flex-1
@@ -1240,7 +1237,7 @@ export default function Header({
                     text-black/30
                   "
                 >
-                  SEARCH LUMÉRA
+                  SEARCH VIREL
                 </p>
 
                 <p
@@ -1250,7 +1247,7 @@ export default function Header({
                     text-2xl
                   "
                 >
-                  Find your perfect dress
+                  Find your perfect pair
                 </p>
               </div>
             ) : searchLoading ? (
@@ -1297,7 +1294,7 @@ export default function Header({
                     text-black/40
                   "
                 >
-                  Try another dress name.
+                  Try another shoe name.
                 </p>
               </div>
             ) : (
@@ -1356,7 +1353,7 @@ export default function Header({
                         key={
                           product.id
                         }
-                        href={`/dresses/${product.slug}`}
+                        href={`/shop/${product.slug}`}
                         onClick={
                           closeSearch
                         }
@@ -1410,7 +1407,7 @@ export default function Header({
                                   text-black/30
                                 "
                               >
-                                LUMÉRA
+                                VIREL
                               </p>
                             </div>
                           )}

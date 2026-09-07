@@ -57,16 +57,19 @@ export default function MyOrdersPage() {
           await response.json();
 
         console.log(
-          "MY ORDERS RESPONSE:",
+          "VIREL MY ORDERS RESPONSE:",
           result
         );
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         if (response.status === 401) {
           router.replace(
             "/account/login"
           );
+
           return;
         }
 
@@ -77,6 +80,7 @@ export default function MyOrdersPage() {
           );
 
           setOrders([]);
+
           return;
         }
 
@@ -85,13 +89,16 @@ export default function MyOrdersPage() {
         );
 
         const receivedOrders =
-          Array.isArray(result?.orders)
+          Array.isArray(
+            result?.orders
+          )
             ? result.orders
             : [];
 
         setOrders(
           receivedOrders as Order[]
         );
+
       } catch (error) {
         console.error(
           "Orders loading error:",
@@ -101,6 +108,7 @@ export default function MyOrdersPage() {
         if (mounted) {
           setOrders([]);
         }
+
       } finally {
         if (mounted) {
           setLoading(false);
@@ -113,12 +121,18 @@ export default function MyOrdersPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [router]);
+
+  // ========================================
+  // FORMAT DATE
+  // ========================================
 
   function formatDate(
     date: string
   ) {
-    if (!date) return "—";
+    if (!date) {
+      return "—";
+    }
 
     const parsed =
       new Date(date);
@@ -141,6 +155,10 @@ export default function MyOrdersPage() {
     );
   }
 
+  // ========================================
+  // FORMAT MONEY
+  // ========================================
+
   function formatMoney(
     amount: number,
     currency: string
@@ -158,6 +176,10 @@ export default function MyOrdersPage() {
     ).format(safeAmount);
   }
 
+  // ========================================
+  // GET ITEMS
+  // ========================================
+
   function getItems(
     order: Order
   ): OrderItem[] {
@@ -172,6 +194,10 @@ export default function MyOrdersPage() {
     return order.items;
   }
 
+  // ========================================
+  // ITEM NAME
+  // ========================================
+
   function getItemName(
     item: OrderItem
   ) {
@@ -179,15 +205,23 @@ export default function MyOrdersPage() {
       item.name ||
       item.title ||
       item.product_name ||
-      "LUMÉRA Dress"
+      "VIREL Shoe"
     );
   }
+
+  // ========================================
+  // ITEM SIZE
+  // ========================================
 
   function getItemSize(
     item: OrderItem
   ) {
     return item.size || "";
   }
+
+  // ========================================
+  // ITEM QUANTITY
+  // ========================================
 
   function getItemQuantity(
     item: OrderItem
@@ -204,16 +238,23 @@ export default function MyOrdersPage() {
       : 1;
   }
 
+  // ========================================
+  // ITEM IMAGE
+  // ========================================
+
   function getItemImage(
     item: OrderItem
   ) {
-    const image =
+    return (
       item.image ||
       item.image_url ||
-      "";
-
-    return image;
+      ""
+    );
   }
+
+  // ========================================
+  // ORDER STATUS
+  // ========================================
 
   function getOrderStatus(
     order: Order
@@ -224,6 +265,10 @@ export default function MyOrdersPage() {
       "processing"
     ).toLowerCase();
   }
+
+  // ========================================
+  // STATUS LABEL
+  // ========================================
 
   function statusLabel(
     status: string
@@ -237,27 +282,31 @@ export default function MyOrdersPage() {
       );
   }
 
+  // ========================================
+  // STATUS STYLE
+  // ========================================
+
   function getStatusStyle(
     status: string
   ) {
     switch (status) {
       case "paid":
       case "delivered":
-        return "border-green-200 bg-green-50 text-green-700";
+        return "border-[#b8d7c0] bg-[#f0f8f2] text-[#52755b]";
 
       case "shipped":
-        return "border-blue-200 bg-blue-50 text-blue-700";
+        return "border-[#b9cddd] bg-[#f1f6fa] text-[#58718a]";
 
       case "processing":
       case "pending":
-        return "border-yellow-200 bg-yellow-50 text-yellow-700";
+        return "border-[#ddc9a4] bg-[#faf6ec] text-[#90774d]";
 
       case "cancelled":
       case "canceled":
-        return "border-red-200 bg-red-50 text-red-600";
+        return "border-[#dfbcbc] bg-[#fbf0f0] text-[#9b5e5e]";
 
       default:
-        return "border-black/10 bg-[#f8f6f2] text-black/60";
+        return "border-[#211d1d]/10 bg-[#f8f2f0] text-[#211d1d]/60";
     }
   }
 
@@ -267,46 +316,56 @@ export default function MyOrdersPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f6f2] px-5">
+      <main className="flex min-h-screen items-center justify-center bg-[#fcf8f6] px-5">
+
         <div className="text-center">
-          <p className="text-[10px] tracking-[0.3em] text-black/40">
+
+          <p className="text-[9px] tracking-[0.35em] text-[#a88989]">
+            VIREL
+          </p>
+
+          <p className="mt-3 text-[10px] tracking-[0.3em] text-[#211d1d]/40">
             LOADING ORDERS...
           </p>
 
-          <div className="mx-auto mt-5 h-px w-10 bg-black/20" />
+          <div className="mx-auto mt-5 h-px w-10 bg-[#211d1d]/20" />
+
         </div>
+
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#f8f6f2] text-black">
+    <main className="min-h-screen overflow-x-hidden bg-[#fcf8f6] text-[#211d1d]">
 
-      {/* HEADER */}
+      {/* ========================================
+          HEADER
+      ======================================== */}
 
-      <header className="border-b border-black/10 bg-white">
+      <header className="border-b border-[#211d1d]/10 bg-white">
 
         <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:min-h-24 sm:px-8 md:px-10">
 
           <Link
             href="/"
-            className="shrink-0 font-serif text-2xl tracking-[0.2em] sm:text-3xl sm:tracking-[0.25em]"
+            className="shrink-0 font-serif text-2xl tracking-[0.25em] sm:text-3xl sm:tracking-[0.3em]"
           >
-            LUMÉRA
+            VIREL
           </Link>
 
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-7">
 
             <Link
               href="/account"
-              className="text-[8px] tracking-[0.16em] text-black/50 transition hover:text-black sm:text-[10px] sm:tracking-[0.2em]"
+              className="text-[8px] tracking-[0.16em] text-[#211d1d]/50 transition hover:text-[#211d1d] sm:text-[10px] sm:tracking-[0.2em]"
             >
               MY ACCOUNT
             </Link>
 
             <Link
-              href="/dresses"
-              className="text-[8px] tracking-[0.16em] text-black/50 transition hover:text-black sm:text-[10px] sm:tracking-[0.2em]"
+              href="/shop"
+              className="text-[8px] tracking-[0.16em] text-[#211d1d]/50 transition hover:text-[#211d1d] sm:text-[10px] sm:tracking-[0.2em]"
             >
               SHOP
             </Link>
@@ -317,7 +376,10 @@ export default function MyOrdersPage() {
 
       </header>
 
-      {/* PAGE */}
+
+      {/* ========================================
+          PAGE
+      ======================================== */}
 
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16 md:px-10 md:py-24">
 
@@ -325,29 +387,33 @@ export default function MyOrdersPage() {
 
         <div className="max-w-2xl">
 
-          <p className="text-[8px] tracking-[0.35em] text-black/40 sm:text-[9px] sm:tracking-[0.4em]">
-            CUSTOMER ACCOUNT
+          <p className="text-[8px] tracking-[0.4em] text-[#a88989] sm:text-[9px]">
+            VIREL · CUSTOMER ACCOUNT
           </p>
 
           <h1 className="mt-4 font-serif text-4xl sm:mt-5 sm:text-5xl md:text-6xl">
             My Orders
           </h1>
 
-          <p className="mt-4 text-xs leading-6 text-black/50 sm:mt-5 sm:text-sm">
-            View your LUMÉRA order history,
-            payment status and delivery
-            information.
+          <p className="mt-4 text-xs leading-6 text-[#756b6b] sm:mt-5 sm:text-sm sm:leading-7">
+            View your VIREL order history,
+            payment status and delivery information.
           </p>
 
         </div>
 
-        {/* SUMMARY */}
 
-        <div className="mt-10 grid border-y border-black/10 bg-white sm:mt-14 md:grid-cols-3">
+        {/* ========================================
+            ACCOUNT SUMMARY
+        ======================================== */}
 
-          <div className="border-b border-black/10 px-5 py-5 sm:px-6 sm:py-6 md:border-b-0 md:border-r">
+        <div className="mt-10 grid border border-[#211d1d]/10 bg-white sm:mt-14 md:grid-cols-3">
 
-            <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+          {/* ACCOUNT */}
+
+          <div className="border-b border-[#211d1d]/10 px-5 py-5 sm:px-6 sm:py-6 md:border-b-0 md:border-r">
+
+            <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
               ACCOUNT
             </p>
 
@@ -357,9 +423,12 @@ export default function MyOrdersPage() {
 
           </div>
 
-          <div className="border-b border-black/10 px-5 py-5 sm:px-6 sm:py-6 md:border-b-0 md:border-r">
 
-            <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+          {/* ORDERS */}
+
+          <div className="border-b border-[#211d1d]/10 px-5 py-5 sm:px-6 sm:py-6 md:border-b-0 md:border-r">
+
+            <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
               ORDERS
             </p>
 
@@ -369,9 +438,12 @@ export default function MyOrdersPage() {
 
           </div>
 
+
+          {/* STATUS */}
+
           <div className="px-5 py-5 sm:px-6 sm:py-6">
 
-            <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+            <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
               ACCOUNT STATUS
             </p>
 
@@ -383,15 +455,18 @@ export default function MyOrdersPage() {
 
         </div>
 
-        {/* ORDER HISTORY */}
+
+        {/* ========================================
+            ORDER HISTORY
+        ======================================== */}
 
         <div className="mt-12 sm:mt-16">
 
-          <div className="flex items-end justify-between gap-4 border-b border-black/10 pb-4 sm:pb-5">
+          <div className="flex items-end justify-between gap-4 border-b border-[#211d1d]/10 pb-4 sm:pb-5">
 
             <div>
 
-              <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+              <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
                 ORDER HISTORY
               </p>
 
@@ -401,7 +476,7 @@ export default function MyOrdersPage() {
 
             </div>
 
-            <span className="shrink-0 text-[10px] text-black/40 sm:text-xs">
+            <span className="shrink-0 text-[10px] text-[#211d1d]/40 sm:text-xs">
               {orders.length}{" "}
               {orders.length === 1
                 ? "order"
@@ -410,27 +485,32 @@ export default function MyOrdersPage() {
 
           </div>
 
-          {/* NO ORDERS */}
+
+          {/* ======================================
+              NO ORDERS
+          ====================================== */}
 
           {orders.length === 0 ? (
 
-            <div className="border-b border-black/10 bg-white px-5 py-16 text-center sm:px-6 sm:py-24">
+            <div className="border-b border-[#211d1d]/10 bg-white px-5 py-16 text-center sm:px-6 sm:py-24">
 
-              <p className="font-serif text-2xl sm:text-3xl">
+              <p className="text-[8px] tracking-[0.35em] text-[#a88989]">
+                VIREL
+              </p>
+
+              <p className="mt-4 font-serif text-2xl sm:text-3xl">
                 No orders yet
               </p>
 
-              <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-black/50 sm:mt-4 sm:text-sm">
-                You haven't placed an
-                order with LUMÉRA yet.
-                Discover our latest
-                collection and find your
-                next dress.
+              <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-[#756b6b] sm:mt-4 sm:text-sm">
+                You haven't placed an order with
+                VIREL yet. Discover our collection
+                and find your next pair.
               </p>
 
               <Link
-                href="/dresses"
-                className="mt-6 inline-block bg-black px-8 py-4 text-[9px] tracking-[0.22em] text-white transition hover:bg-black/80 sm:mt-8 sm:px-10 sm:text-[10px] sm:tracking-[0.25em]"
+                href="/shop"
+                className="mt-6 inline-block bg-[#211d1d] px-8 py-4 text-[9px] tracking-[0.22em] text-white transition hover:bg-[#a88989] sm:mt-8 sm:px-10 sm:text-[10px] sm:tracking-[0.25em]"
               >
                 SHOP COLLECTION
               </Link>
@@ -455,16 +535,18 @@ export default function MyOrdersPage() {
                   return (
                     <article
                       key={order.id}
-                      className="overflow-hidden border border-black/10 bg-white transition hover:border-black/30"
+                      className="overflow-hidden border border-[#211d1d]/10 bg-white transition hover:border-[#a88989]/50"
                     >
 
-                      {/* ORDER HEADER */}
+                      {/* ==================================
+                          ORDER HEADER
+                      ================================== */}
 
-                      <div className="grid gap-5 border-b border-black/10 px-5 py-5 sm:gap-6 sm:px-8 sm:py-7 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-center">
+                      <div className="grid gap-5 border-b border-[#211d1d]/10 px-5 py-5 sm:gap-6 sm:px-8 sm:py-7 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-center">
 
                         <div>
 
-                          <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+                          <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
                             ORDER NUMBER
                           </p>
 
@@ -474,9 +556,10 @@ export default function MyOrdersPage() {
 
                         </div>
 
+
                         <div>
 
-                          <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+                          <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
                             DATE
                           </p>
 
@@ -488,9 +571,10 @@ export default function MyOrdersPage() {
 
                         </div>
 
+
                         <div>
 
-                          <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+                          <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
                             TOTAL
                           </p>
 
@@ -504,6 +588,7 @@ export default function MyOrdersPage() {
                           </p>
 
                         </div>
+
 
                         <div>
 
@@ -521,9 +606,12 @@ export default function MyOrdersPage() {
 
                       </div>
 
-                      {/* ITEMS */}
 
-                      <div className="divide-y divide-black/10">
+                      {/* ==================================
+                          ITEMS
+                      ================================== */}
+
+                      <div className="divide-y divide-[#211d1d]/10">
 
                         {items.length > 0 ? (
 
@@ -545,9 +633,7 @@ export default function MyOrdersPage() {
 
                               return (
                                 <div
-                                  key={
-                                    `${order.id}-${item.id ?? index}-${index}`
-                                  }
+                                  key={`${order.id}-${item.id ?? index}-${index}`}
                                   className="flex items-center justify-between gap-4 px-5 py-5 sm:gap-5 sm:px-8 sm:py-6"
                                 >
 
@@ -555,7 +641,7 @@ export default function MyOrdersPage() {
 
                                     {image ? (
 
-                                      <div className="h-20 w-14 shrink-0 overflow-hidden bg-[#f8f6f2] sm:h-20 sm:w-16">
+                                      <div className="h-20 w-14 shrink-0 overflow-hidden bg-[#f5ece9] sm:h-20 sm:w-16">
 
                                         <img
                                           src={image}
@@ -570,15 +656,16 @@ export default function MyOrdersPage() {
 
                                     ) : (
 
-                                      <div className="flex h-20 w-14 shrink-0 items-center justify-center bg-[#f8f6f2] sm:w-16">
+                                      <div className="flex h-20 w-14 shrink-0 items-center justify-center bg-[#f5ece9] sm:w-16">
 
-                                        <span className="text-[7px] tracking-[0.15em] text-black/30 sm:text-[8px] sm:tracking-[0.2em]">
-                                          LUMÉRA
+                                        <span className="text-[7px] tracking-[0.15em] text-[#a88989] sm:text-[8px] sm:tracking-[0.2em]">
+                                          VIREL
                                         </span>
 
                                       </div>
 
                                     )}
+
 
                                     <div className="min-w-0">
 
@@ -588,7 +675,7 @@ export default function MyOrdersPage() {
                                         )}
                                       </p>
 
-                                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[8px] tracking-[0.1em] text-black/40 sm:mt-2 sm:gap-4 sm:text-[10px] sm:tracking-[0.12em]">
+                                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[8px] tracking-[0.1em] text-[#8d8080] sm:mt-2 sm:gap-4 sm:text-[10px] sm:tracking-[0.12em]">
 
                                         {getItemSize(
                                           item
@@ -612,7 +699,8 @@ export default function MyOrdersPage() {
 
                                   </div>
 
-                                  <p className="shrink-0 text-xs text-black/50 sm:text-sm">
+
+                                  <p className="shrink-0 text-xs text-[#756b6b] sm:text-sm">
                                     ×{" "}
                                     {quantity}
                                   </p>
@@ -624,7 +712,7 @@ export default function MyOrdersPage() {
 
                         ) : (
 
-                          <div className="px-5 py-7 text-xs text-black/40 sm:px-8 sm:py-8 sm:text-sm">
+                          <div className="px-5 py-7 text-xs text-[#756b6b] sm:px-8 sm:py-8 sm:text-sm">
                             Order details unavailable.
                           </div>
 
@@ -632,17 +720,20 @@ export default function MyOrdersPage() {
 
                       </div>
 
-                      {/* FOOTER */}
 
-                      <div className="flex flex-col gap-5 border-t border-black/10 px-5 py-5 sm:px-8 sm:py-5 md:flex-row md:items-center md:justify-between">
+                      {/* ==================================
+                          ORDER FOOTER
+                      ================================== */}
+
+                      <div className="flex flex-col gap-5 border-t border-[#211d1d]/10 px-5 py-5 sm:px-8 sm:py-5 md:flex-row md:items-center md:justify-between">
 
                         <div className="flex flex-wrap gap-x-5 gap-y-2 sm:gap-x-6">
 
-                          <p className="text-[8px] tracking-[0.16em] text-black/40 sm:text-[9px] sm:tracking-[0.2em]">
+                          <p className="text-[8px] tracking-[0.16em] text-[#8d8080] sm:text-[9px] sm:tracking-[0.2em]">
 
                             PAYMENT{" "}
 
-                            <span className="text-black/70">
+                            <span className="text-[#211d1d]/70">
                               {(
                                 order.payment_status ||
                                 "pending"
@@ -651,7 +742,7 @@ export default function MyOrdersPage() {
 
                           </p>
 
-                          <p className="text-[8px] tracking-[0.16em] text-black/40 sm:text-[9px] sm:tracking-[0.2em]">
+                          <p className="text-[8px] tracking-[0.16em] text-[#8d8080] sm:text-[9px] sm:tracking-[0.2em]">
 
                             {items.length}{" "}
 
@@ -663,11 +754,12 @@ export default function MyOrdersPage() {
 
                         </div>
 
+
                         <Link
                           href={`/account/orders/${encodeURIComponent(
                             order.order_number
                           )}`}
-                          className="inline-flex w-full items-center justify-center border border-black px-6 py-3 text-[8px] tracking-[0.2em] transition hover:bg-black hover:text-white sm:w-auto sm:px-7 sm:text-[9px] sm:tracking-[0.25em]"
+                          className="inline-flex w-full items-center justify-center border border-[#211d1d] px-6 py-3 text-[8px] tracking-[0.2em] transition hover:bg-[#211d1d] hover:text-white sm:w-auto sm:px-7 sm:text-[9px] sm:tracking-[0.25em]"
                         >
                           VIEW ORDER
                         </Link>
@@ -685,20 +777,23 @@ export default function MyOrdersPage() {
 
         </div>
 
-        {/* BOTTOM LINKS */}
+
+        {/* ========================================
+            BOTTOM LINKS
+        ======================================== */}
 
         <div className="mt-10 flex flex-col gap-4 sm:mt-12 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
 
           <Link
             href="/account"
-            className="text-[9px] tracking-[0.2em] text-black/50 transition hover:text-black sm:text-[10px] sm:tracking-[0.25em]"
+            className="text-[9px] tracking-[0.2em] text-[#756b6b] transition hover:text-[#211d1d] sm:text-[10px] sm:tracking-[0.25em]"
           >
             ← BACK TO MY ACCOUNT
           </Link>
 
           <Link
-            href="/dresses"
-            className="text-[9px] tracking-[0.2em] text-black/50 transition hover:text-black sm:text-[10px] sm:tracking-[0.25em]"
+            href="/shop"
+            className="text-[9px] tracking-[0.2em] text-[#756b6b] transition hover:text-[#211d1d] sm:text-[10px] sm:tracking-[0.25em]"
           >
             CONTINUE SHOPPING →
           </Link>

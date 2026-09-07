@@ -223,7 +223,7 @@ export default function AccountDetailsPage() {
             href="/"
             className="font-serif text-3xl tracking-[0.25em]"
           >
-            LUMÉRA
+            VIREL
           </Link>
 
           <div className="flex items-center gap-6">
@@ -275,7 +275,7 @@ export default function AccountDetailsPage() {
 
           <p className="mt-5 text-sm leading-6 text-black/50">
             Manage your personal information and
-            delivery details for your LUMÉRA account.
+            delivery details for your VIREL account.
           </p>
 
         </div>
@@ -638,7 +638,7 @@ export default function AccountDetailsPage() {
               </h2>
 
               <p className="mt-2 text-sm text-black/50">
-                Keep your LUMÉRA account secure by
+                Keep your VIREL account secure by
                 regularly updating your password.
               </p>
 

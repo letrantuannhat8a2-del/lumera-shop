@@ -25,6 +25,8 @@ export default function CustomerRegisterPage() {
   ) {
     event.preventDefault();
 
+    if (loading) return;
+
     setError("");
 
     if (password.length < 6) {
@@ -43,48 +45,77 @@ export default function CustomerRegisterPage() {
 
     setLoading(true);
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { data, error } =
-      await supabase.auth.signUp({
-        email,
-        password,
+      const { data, error } =
+        await supabase.auth.signUp({
+          email: email.trim(),
+          password,
 
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
+          options: {
+            data: {
+              first_name:
+                firstName.trim(),
+              last_name:
+                lastName.trim(),
+            },
           },
-        },
-      });
+        });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
+      if (error) {
+        console.error(
+          "REGISTER ERROR:",
+          error
+        );
 
-    if (data.session) {
-      router.push("/account");
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // ========================================
+      // EMAIL CONFIRMATION DISABLED
+      // ========================================
+
+      if (data.session) {
+        router.replace("/account");
+        router.refresh();
+        return;
+      }
+
+      // ========================================
+      // EMAIL CONFIRMATION REQUIRED
+      // ========================================
+
+      router.replace(
+        "/account/login?registered=true"
+      );
+
       router.refresh();
-      return;
+
+    } catch (err) {
+      console.error(
+        "REGISTER EXCEPTION:",
+        err
+      );
+
+      setError(
+        "Something went wrong while creating your account."
+      );
+
+      setLoading(false);
     }
-
-    router.push(
-      "/account/login?registered=true"
-    );
-
-    router.refresh();
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#f8f6f2] text-black">
+    <main className="min-h-screen overflow-x-hidden bg-[#fcf8f6] text-[#211d1d]">
 
       {/* ========================================
           HEADER
       ======================================== */}
 
-      <header className="border-b border-black/10 bg-[#f8f6f2]">
+      <header className="border-b border-[#211d1d]/10 bg-[#fcf8f6]">
 
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:h-24 sm:px-8 md:px-10">
 
@@ -99,18 +130,18 @@ export default function CustomerRegisterPage() {
               sm:tracking-[0.3em]
             "
           >
-            LUMÉRA
+            VIREL
           </Link>
 
           <Link
-            href="/"
+            href="/shop"
             className="
               shrink-0
               text-[8px]
               tracking-[0.18em]
-              text-black/60
+              text-[#211d1d]/60
               transition
-              hover:text-black
+              hover:text-[#211d1d]
               sm:text-[10px]
               sm:tracking-[0.25em]
             "
@@ -131,22 +162,20 @@ export default function CustomerRegisterPage() {
 
         <div className="w-full max-w-xl">
 
-          {/* ====================================
-              TITLE
-          ==================================== */}
+          {/* TITLE */}
 
           <div className="text-center">
 
-            <p className="text-[8px] tracking-[0.32em] text-black/40 sm:text-[10px] sm:tracking-[0.35em]">
-              CUSTOMER ACCOUNT
+            <p className="text-[8px] tracking-[0.32em] text-[#a88989] sm:text-[10px] sm:tracking-[0.35em]">
+              VIREL · CUSTOMER ACCOUNT
             </p>
 
             <h1 className="mt-4 font-serif text-4xl sm:mt-5 sm:text-5xl">
               Create Account
             </h1>
 
-            <p className="mx-auto mt-4 max-w-md text-xs leading-6 text-black/50 sm:mt-5 sm:text-sm">
-              Create your LUMÉRA account to manage
+            <p className="mx-auto mt-4 max-w-md text-xs leading-6 text-[#756b6b] sm:mt-5 sm:text-sm">
+              Create your VIREL account to manage
               your orders and enjoy a more personal
               shopping experience.
             </p>
@@ -154,9 +183,7 @@ export default function CustomerRegisterPage() {
           </div>
 
 
-          {/* ====================================
-              REGISTER FORM
-          ==================================== */}
+          {/* REGISTER FORM */}
 
           <form
             onSubmit={handleRegister}
@@ -171,7 +198,7 @@ export default function CustomerRegisterPage() {
 
               <div>
 
-                <label className="mb-2 block text-[9px] tracking-[0.18em] text-black/50 sm:text-[10px] sm:tracking-[0.2em]">
+                <label className="mb-2 block text-[9px] tracking-[0.18em] text-[#756b6b] sm:text-[10px] sm:tracking-[0.2em]">
                   FIRST NAME
                 </label>
 
@@ -189,14 +216,14 @@ export default function CustomerRegisterPage() {
                     w-full
                     min-w-0
                     border
-                    border-black/20
+                    border-[#211d1d]/20
                     bg-white
                     px-4
                     py-3.5
                     text-sm
                     outline-none
                     transition
-                    focus:border-black
+                    focus:border-[#211d1d]
                     sm:py-4
                   "
                 />
@@ -208,7 +235,7 @@ export default function CustomerRegisterPage() {
 
               <div>
 
-                <label className="mb-2 block text-[9px] tracking-[0.18em] text-black/50 sm:text-[10px] sm:tracking-[0.2em]">
+                <label className="mb-2 block text-[9px] tracking-[0.18em] text-[#756b6b] sm:text-[10px] sm:tracking-[0.2em]">
                   LAST NAME
                 </label>
 
@@ -226,14 +253,14 @@ export default function CustomerRegisterPage() {
                     w-full
                     min-w-0
                     border
-                    border-black/20
+                    border-[#211d1d]/20
                     bg-white
                     px-4
                     py-3.5
                     text-sm
                     outline-none
                     transition
-                    focus:border-black
+                    focus:border-[#211d1d]
                     sm:py-4
                   "
                 />
@@ -247,7 +274,7 @@ export default function CustomerRegisterPage() {
 
             <div>
 
-              <label className="mb-2 block text-[9px] tracking-[0.18em] text-black/50 sm:text-[10px] sm:tracking-[0.2em]">
+              <label className="mb-2 block text-[9px] tracking-[0.18em] text-[#756b6b] sm:text-[10px] sm:tracking-[0.2em]">
                 EMAIL ADDRESS
               </label>
 
@@ -265,14 +292,14 @@ export default function CustomerRegisterPage() {
                   w-full
                   min-w-0
                   border
-                  border-black/20
+                  border-[#211d1d]/20
                   bg-white
                   px-4
                   py-3.5
                   text-sm
                   outline-none
                   transition
-                  focus:border-black
+                  focus:border-[#211d1d]
                   sm:py-4
                 "
               />
@@ -284,7 +311,7 @@ export default function CustomerRegisterPage() {
 
             <div>
 
-              <label className="mb-2 block text-[9px] tracking-[0.18em] text-black/50 sm:text-[10px] sm:tracking-[0.2em]">
+              <label className="mb-2 block text-[9px] tracking-[0.18em] text-[#756b6b] sm:text-[10px] sm:tracking-[0.2em]">
                 PASSWORD
               </label>
 
@@ -302,19 +329,19 @@ export default function CustomerRegisterPage() {
                   w-full
                   min-w-0
                   border
-                  border-black/20
+                  border-[#211d1d]/20
                   bg-white
                   px-4
                   py-3.5
                   text-sm
                   outline-none
                   transition
-                  focus:border-black
+                  focus:border-[#211d1d]
                   sm:py-4
                 "
               />
 
-              <p className="mt-2 text-[10px] leading-5 text-black/40 sm:text-xs">
+              <p className="mt-2 text-[10px] leading-5 text-[#8d8080] sm:text-xs">
                 Minimum 6 characters.
               </p>
 
@@ -325,7 +352,7 @@ export default function CustomerRegisterPage() {
 
             <div>
 
-              <label className="mb-2 block text-[9px] tracking-[0.18em] text-black/50 sm:text-[10px] sm:tracking-[0.2em]">
+              <label className="mb-2 block text-[9px] tracking-[0.18em] text-[#756b6b] sm:text-[10px] sm:tracking-[0.2em]">
                 CONFIRM PASSWORD
               </label>
 
@@ -343,14 +370,14 @@ export default function CustomerRegisterPage() {
                   w-full
                   min-w-0
                   border
-                  border-black/20
+                  border-[#211d1d]/20
                   bg-white
                   px-4
                   py-3.5
                   text-sm
                   outline-none
                   transition
-                  focus:border-black
+                  focus:border-[#211d1d]
                   sm:py-4
                 "
               />
@@ -362,9 +389,9 @@ export default function CustomerRegisterPage() {
 
             {error && (
 
-              <div className="border border-red-200 bg-red-50 px-4 py-3">
+              <div className="border border-[#dfbcbc] bg-[#fbf0f0] px-4 py-3">
 
-                <p className="text-xs leading-5 text-red-600 sm:text-sm">
+                <p className="text-xs leading-5 text-[#9b5e5e] sm:text-sm">
                   {error}
                 </p>
 
@@ -380,13 +407,13 @@ export default function CustomerRegisterPage() {
               disabled={loading}
               className="
                 w-full
-                bg-black
+                bg-[#211d1d]
                 py-4
                 text-[9px]
                 tracking-[0.25em]
                 text-white
                 transition
-                hover:bg-black/80
+                hover:bg-[#a88989]
                 disabled:cursor-not-allowed
                 disabled:opacity-50
                 sm:text-[10px]
@@ -401,14 +428,12 @@ export default function CustomerRegisterPage() {
           </form>
 
 
-          {/* ====================================
-              LOGIN
-          ==================================== */}
+          {/* LOGIN */}
 
-          <div className="mt-10 border-t border-black/10 pt-8 text-center sm:mt-12 sm:pt-10">
+          <div className="mt-10 border-t border-[#211d1d]/10 pt-8 text-center sm:mt-12 sm:pt-10">
 
-            <p className="text-xs text-black/50 sm:text-sm">
-              Already have a LUMÉRA account?
+            <p className="text-xs text-[#756b6b] sm:text-sm">
+              Already have a VIREL account?
             </p>
 
             <Link
@@ -417,7 +442,7 @@ export default function CustomerRegisterPage() {
                 mt-3
                 inline-block
                 border-b
-                border-black
+                border-[#211d1d]
                 pb-1
                 text-[9px]
                 tracking-[0.2em]
@@ -430,6 +455,17 @@ export default function CustomerRegisterPage() {
             >
               SIGN IN
             </Link>
+
+          </div>
+
+
+          {/* BRAND */}
+
+          <div className="mt-10 text-center sm:mt-12">
+
+            <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
+              VIREL · BRIDAL SHOES
+            </p>
 
           </div>
 

@@ -186,7 +186,7 @@ export async function sendOrderConfirmationEmail(
     await resend.emails.send(
       {
         from:
-          "LUMÉRA <onboarding@resend.dev>",
+          "VIREL<onboarding@resend.dev>",
 
         // =================================================
         // SEND TO THE CUSTOMER WHO PLACED THE ORDER
@@ -248,7 +248,7 @@ export async function sendOrderConfirmationEmail(
                               letter-spacing: 8px;
                             "
                           >
-                            LUMÉRA
+                            VIREL
                           </div>
                         </td>
                       </tr>
@@ -579,7 +579,7 @@ export async function sendOrderConfirmationEmail(
 
                           <br /><br />
 
-                          © LUMÉRA
+                          © VIREL
 
                         </td>
                       </tr>
@@ -716,7 +716,7 @@ export async function sendOrderStatusEmail(
   const { data, error } =
     await resend.emails.send({
       from:
-        "LUMÉRA <onboarding@resend.dev>",
+        "VIREL<onboarding@resend.dev>",
 
       // =================================================
       // SEND TO THE CUSTOMER
@@ -780,7 +780,7 @@ export async function sendOrderStatusEmail(
                             letter-spacing: 8px;
                           "
                         >
-                          LUMÉRA
+                          VIREL
                         </div>
 
                       </td>
@@ -923,7 +923,7 @@ export async function sendOrderStatusEmail(
 
                         <br /><br />
 
-                        © LUMÉRA
+                        © VIREL
 
                       </td>
                     </tr>

@@ -5,6 +5,31 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 
+type OrderItem = {
+  id?: string;
+  name?: string;
+  title?: string;
+  product_name?: string;
+  productName?: string;
+  size?: string;
+  quantity?: number;
+  qty?: number;
+  image?: string;
+  image_url?: string;
+  imageUrl?: string;
+  image_1?: string;
+  image1?: string;
+  thumbnail?: string;
+  thumbnail_url?: string;
+  thumbnailUrl?: string;
+  product_image?: string;
+  productImage?: string;
+  images?: any;
+  product?: any;
+  price?: number;
+  unit_price?: number;
+  amount?: number;
+};
 
 type Order = {
   id: string;
@@ -14,7 +39,7 @@ type Order = {
   currency: string;
   payment_status: string;
   status?: string | null;
-  items: any;
+  items: OrderItem[] | null;
   shipping_address?: any;
   customer_name?: string | null;
 };
@@ -35,25 +60,39 @@ export default function OrderDetailsPage() {
   const [email, setEmail] =
     useState("");
 
+  // ========================================
+  // LOAD ORDER
+  // ========================================
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadOrder() {
       try {
         const response = await fetch(
-          `/api/account/orders/${encodeURIComponent(orderNumber)}`,
+          `/api/account/orders/${encodeURIComponent(
+            orderNumber
+          )}`,
           {
             method: "GET",
             cache: "no-store",
+            headers: {
+              Accept: "application/json",
+            },
           }
         );
 
-        const result = await response.json();
+        const result =
+          await response.json();
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         if (response.status === 401) {
-          router.replace("/account/login");
+          router.replace(
+            "/account/login"
+          );
           return;
         }
 
@@ -67,12 +106,19 @@ export default function OrderDetailsPage() {
             "Order API error:",
             result
           );
+
           setOrder(null);
           return;
         }
 
-        setEmail(result.email ?? "");
-        setOrder(result.order as Order);
+        setEmail(
+          result?.email ?? ""
+        );
+
+        setOrder(
+          result?.order as Order
+        );
+
       } catch (error) {
         console.error(
           "Order loading error:",
@@ -82,6 +128,7 @@ export default function OrderDetailsPage() {
         if (!cancelled) {
           setOrder(null);
         }
+
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -100,12 +147,25 @@ export default function OrderDetailsPage() {
     };
   }, [orderNumber, router]);
 
+  // ========================================
+  // FORMAT DATE
+  // ========================================
+
   function formatDate(
     date: string
   ) {
-    return new Date(
-      date
-    ).toLocaleDateString(
+    const parsed =
+      new Date(date);
+
+    if (
+      Number.isNaN(
+        parsed.getTime()
+      )
+    ) {
+      return "—";
+    }
+
+    return parsed.toLocaleDateString(
       "en-US",
       {
         month: "long",
@@ -114,6 +174,10 @@ export default function OrderDetailsPage() {
       }
     );
   }
+
+  // ========================================
+  // FORMAT MONEY
+  // ========================================
 
   function formatMoney(
     amount: number,
@@ -126,10 +190,16 @@ export default function OrderDetailsPage() {
         currency:
           currency || "USD",
       }
-    ).format(amount);
+    ).format(
+      Number(amount) || 0
+    );
   }
 
-  function getItems() {
+  // ========================================
+  // GET ITEMS
+  // ========================================
+
+  function getItems(): OrderItem[] {
     if (
       !order ||
       !Array.isArray(
@@ -142,36 +212,57 @@ export default function OrderDetailsPage() {
     return order.items;
   }
 
+  // ========================================
+  // ITEM NAME
+  // ========================================
+
   function getItemName(
-    item: any
+    item: OrderItem
   ) {
     return (
       item?.name ||
       item?.title ||
       item?.product_name ||
       item?.productName ||
-      "LUMÉRA Dress"
+      "VIREL Shoe"
     );
   }
 
+  // ========================================
+  // ITEM SIZE
+  // ========================================
+
   function getItemSize(
-    item: any
+    item: OrderItem
   ) {
     return item?.size || "";
   }
 
+  // ========================================
+  // ITEM QUANTITY
+  // ========================================
+
   function getItemQuantity(
-    item: any
+    item: OrderItem
   ) {
-    return (
-      item?.quantity ??
-      item?.qty ??
-      1
-    );
+    const quantity =
+      Number(
+        item?.quantity ??
+          item?.qty ??
+          1
+      );
+
+    return quantity > 0
+      ? quantity
+      : 1;
   }
 
+  // ========================================
+  // ITEM PRICE
+  // ========================================
+
   function getItemPrice(
-    item: any
+    item: OrderItem
   ) {
     return Number(
       item?.price ??
@@ -181,16 +272,17 @@ export default function OrderDetailsPage() {
     );
   }
 
-  // ==================================================
-  // GET PRODUCT IMAGE
-  // ==================================================
+  // ========================================
+  // ITEM IMAGE
+  // ========================================
 
   function getItemImage(
-    item: any
+    item: OrderItem
   ): string | null {
-    // ------------------------------------------
-    // 1. Direct image fields
-    // ------------------------------------------
+
+    // --------------------------------------
+    // DIRECT IMAGE
+    // --------------------------------------
 
     const directImage =
       item?.image ||
@@ -212,9 +304,9 @@ export default function OrderDetailsPage() {
       return directImage.trim();
     }
 
-    // ------------------------------------------
-    // 2. Images array
-    // ------------------------------------------
+    // --------------------------------------
+    // IMAGES ARRAY
+    // --------------------------------------
 
     if (
       Array.isArray(
@@ -234,9 +326,9 @@ export default function OrderDetailsPage() {
       }
     }
 
-    // ------------------------------------------
-    // 3. Images object
-    // ------------------------------------------
+    // --------------------------------------
+    // IMAGES OBJECT
+    // --------------------------------------
 
     if (
       item?.images &&
@@ -258,9 +350,9 @@ export default function OrderDetailsPage() {
       }
     }
 
-    // ------------------------------------------
-    // 4. Product nested object
-    // ------------------------------------------
+    // --------------------------------------
+    // NESTED PRODUCT
+    // --------------------------------------
 
     const nestedProduct =
       item?.product;
@@ -307,6 +399,10 @@ export default function OrderDetailsPage() {
     return null;
   }
 
+  // ========================================
+  // STATUS
+  // ========================================
+
   function getStatus() {
     return (
       order?.status ||
@@ -336,64 +432,82 @@ export default function OrderDetailsPage() {
     switch (status) {
       case "paid":
       case "delivered":
-        return "border-green-200 bg-green-50 text-green-700";
+        return "border-[#b8d7c0] bg-[#f0f8f2] text-[#52755b]";
 
       case "shipped":
-        return "border-blue-200 bg-blue-50 text-blue-700";
+        return "border-[#b9cddd] bg-[#f1f6fa] text-[#58718a]";
 
       case "processing":
-        return "border-yellow-200 bg-yellow-50 text-yellow-700";
+      case "pending":
+        return "border-[#ddc9a4] bg-[#faf6ec] text-[#90774d]";
 
       case "cancelled":
       case "canceled":
-        return "border-red-200 bg-red-50 text-red-600";
+        return "border-[#dfbcbc] bg-[#fbf0f0] text-[#9b5e5e]";
 
       default:
-        return "border-black/10 bg-[#f8f6f2] text-black/60";
+        return "border-[#211d1d]/10 bg-[#f8f2f0] text-[#211d1d]/60";
     }
   }
 
-  // =========================
+  // ========================================
   // LOADING
-  // =========================
+  // ========================================
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f6f2] px-5">
-        <p className="text-center text-[10px] tracking-[0.3em] text-black/40">
-          LOADING ORDER...
-        </p>
+      <main className="flex min-h-screen items-center justify-center bg-[#fcf8f6] px-5">
+
+        <div className="text-center">
+
+          <p className="text-[9px] tracking-[0.35em] text-[#a88989]">
+            VIREL
+          </p>
+
+          <p className="mt-3 text-[10px] tracking-[0.3em] text-black/40">
+            LOADING ORDER...
+          </p>
+
+        </div>
+
       </main>
     );
   }
 
-  // =========================
+  // ========================================
   // ORDER NOT FOUND
-  // =========================
+  // ========================================
 
   if (!order) {
     return (
-      <main className="min-h-screen overflow-x-hidden bg-[#f8f6f2] text-black">
-        <header className="border-b border-black/10 bg-white">
-          <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:min-h-24 sm:px-8 md:px-10">
+      <main className="min-h-screen bg-[#fcf8f6] text-[#211d1d]">
+
+        <header className="border-b border-[#211d1d]/10 bg-white">
+
+          <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between px-5 sm:min-h-24 sm:px-8">
+
             <Link
               href="/"
-              className="shrink-0 font-serif text-2xl tracking-[0.2em] sm:text-3xl sm:tracking-[0.25em]"
+              className="font-serif text-2xl tracking-[0.3em] sm:text-3xl"
             >
-              LUMÉRA
+              VIREL
             </Link>
 
             <Link
               href="/account/orders"
-              className="text-[8px] tracking-[0.16em] text-black/50 hover:text-black sm:text-[10px] sm:tracking-[0.2em]"
+              className="text-[8px] tracking-[0.18em] text-black/50 sm:text-[10px]"
             >
               MY ORDERS
             </Link>
+
           </div>
+
         </header>
 
-        <section className="mx-auto max-w-xl px-5 py-20 text-center sm:px-6 sm:py-32">
-          <p className="text-[8px] tracking-[0.3em] text-black/40 sm:text-[9px] sm:tracking-[0.35em]">
+
+        <section className="mx-auto max-w-xl px-5 py-20 text-center sm:py-32">
+
+          <p className="text-[8px] tracking-[0.35em] text-[#a88989] sm:text-[9px]">
             ORDER NOT FOUND
           </p>
 
@@ -402,18 +516,20 @@ export default function OrderDetailsPage() {
           </h1>
 
           <p className="mt-4 text-xs leading-6 text-black/50 sm:mt-5 sm:text-sm">
-            This order may no longer exist or may
-            not belong to the account currently
+            This order may no longer exist or
+            may not belong to the account currently
             signed in.
           </p>
 
           <Link
             href="/account/orders"
-            className="mt-7 inline-block bg-black px-7 py-4 text-[9px] tracking-[0.22em] text-white sm:mt-8 sm:px-8 sm:text-[10px] sm:tracking-[0.25em]"
+            className="mt-7 inline-block bg-[#211d1d] px-7 py-4 text-[9px] tracking-[0.22em] text-white transition hover:bg-[#a88989] sm:mt-8 sm:px-8 sm:text-[10px]"
           >
             BACK TO MY ORDERS
           </Link>
+
         </section>
+
       </main>
     );
   }
@@ -425,41 +541,45 @@ export default function OrderDetailsPage() {
     getStatus();
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#f8f6f2] text-black">
+    <main className="min-h-screen overflow-x-hidden bg-[#fcf8f6] text-[#211d1d]">
 
       {/* ========================================
           HEADER
       ======================================== */}
 
-      <header className="border-b border-black/10 bg-white">
+      <header className="border-b border-[#211d1d]/10 bg-white">
+
         <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:min-h-24 sm:px-8 md:px-10">
 
           <Link
             href="/"
-            className="shrink-0 font-serif text-2xl tracking-[0.2em] sm:text-3xl sm:tracking-[0.25em]"
+            className="shrink-0 font-serif text-2xl tracking-[0.3em] sm:text-3xl"
           >
-            LUMÉRA
+            VIREL
           </Link>
 
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-7">
 
             <Link
               href="/account"
-              className="text-[8px] tracking-[0.16em] text-black/50 hover:text-black sm:text-[10px] sm:tracking-[0.2em]"
+              className="text-[8px] tracking-[0.16em] text-black/50 transition hover:text-black sm:text-[10px]"
             >
               MY ACCOUNT
             </Link>
 
             <Link
               href="/account/orders"
-              className="text-[8px] tracking-[0.16em] text-black/50 hover:text-black sm:text-[10px] sm:tracking-[0.2em]"
+              className="text-[8px] tracking-[0.16em] text-black/50 transition hover:text-black sm:text-[10px]"
             >
               MY ORDERS
             </Link>
 
           </div>
+
         </div>
+
       </header>
+
 
       {/* ========================================
           CONTENT
@@ -471,21 +591,22 @@ export default function OrderDetailsPage() {
 
         <Link
           href="/account/orders"
-          className="text-[8px] tracking-[0.18em] text-black/40 transition hover:text-black sm:text-[10px] sm:tracking-[0.2em]"
+          className="text-[8px] tracking-[0.2em] text-black/40 transition hover:text-black sm:text-[10px]"
         >
           ← BACK TO MY ORDERS
         </Link>
+
 
         {/* ======================================
             TITLE
         ====================================== */}
 
-        <div className="mt-9 flex flex-col gap-5 border-b border-black/10 pb-8 sm:mt-12 sm:gap-6 sm:pb-10 md:flex-row md:items-end md:justify-between">
+        <div className="mt-9 flex flex-col gap-5 border-b border-[#211d1d]/10 pb-8 sm:mt-12 sm:gap-6 sm:pb-10 md:flex-row md:items-end md:justify-between">
 
           <div className="min-w-0">
 
-            <p className="text-[8px] tracking-[0.3em] text-black/40 sm:text-[9px] sm:tracking-[0.35em]">
-              ORDER DETAILS
+            <p className="text-[8px] tracking-[0.35em] text-[#a88989] sm:text-[9px]">
+              VIREL · ORDER DETAILS
             </p>
 
             <h1 className="mt-3 break-all font-serif text-3xl sm:mt-4 sm:text-4xl md:text-5xl">
@@ -502,7 +623,7 @@ export default function OrderDetailsPage() {
           </div>
 
           <span
-            className={`inline-flex w-fit border px-4 py-2 text-[8px] tracking-[0.17em] sm:px-5 sm:text-[9px] sm:tracking-[0.2em] ${getStatusStyle(
+            className={`inline-flex w-fit border px-4 py-2 text-[8px] tracking-[0.18em] sm:px-5 sm:text-[9px] ${getStatusStyle(
               status
             )}`}
           >
@@ -513,13 +634,14 @@ export default function OrderDetailsPage() {
 
         </div>
 
+
         {/* ======================================
             ORDER PROGRESS
         ====================================== */}
 
-        <div className="mt-8 border border-black/10 bg-white p-5 sm:mt-10 sm:p-6 md:p-8">
+        <div className="mt-8 border border-[#211d1d]/10 bg-white p-5 sm:mt-10 sm:p-6 md:p-8">
 
-          <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+          <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
             ORDER STATUS
           </p>
 
@@ -531,19 +653,20 @@ export default function OrderDetailsPage() {
 
               <div className="flex items-center">
 
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black text-[10px] text-white sm:h-8 sm:w-8 sm:text-xs">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#211d1d] text-[10px] text-white sm:h-8 sm:w-8">
                   ✓
                 </div>
 
-                <div className="h-px flex-1 bg-black" />
+                <div className="h-px flex-1 bg-[#211d1d]" />
 
               </div>
 
-              <p className="mt-2 text-[7px] tracking-[0.1em] sm:mt-3 sm:text-[9px] sm:tracking-[0.15em]">
+              <p className="mt-2 text-[7px] tracking-[0.12em] sm:mt-3 sm:text-[9px]">
                 ORDERED
               </p>
 
             </div>
+
 
             {/* SHIPPED */}
 
@@ -552,10 +675,10 @@ export default function OrderDetailsPage() {
               <div className="flex items-center">
 
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] sm:h-8 sm:w-8 sm:text-xs ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] sm:h-8 sm:w-8 ${
                     status === "shipped" ||
                     status === "delivered"
-                      ? "bg-black text-white"
+                      ? "bg-[#211d1d] text-white"
                       : "border border-black/20 bg-white text-black/30"
                   }`}
                 >
@@ -568,18 +691,19 @@ export default function OrderDetailsPage() {
                 <div
                   className={`h-px flex-1 ${
                     status === "delivered"
-                      ? "bg-black"
+                      ? "bg-[#211d1d]"
                       : "bg-black/10"
                   }`}
                 />
 
               </div>
 
-              <p className="mt-2 text-[7px] tracking-[0.1em] sm:mt-3 sm:text-[9px] sm:tracking-[0.15em]">
+              <p className="mt-2 text-[7px] tracking-[0.12em] sm:mt-3 sm:text-[9px]">
                 SHIPPED
               </p>
 
             </div>
+
 
             {/* DELIVERED */}
 
@@ -588,9 +712,9 @@ export default function OrderDetailsPage() {
               <div className="flex items-center">
 
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] sm:h-8 sm:w-8 sm:text-xs ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] sm:h-8 sm:w-8 ${
                     status === "delivered"
-                      ? "bg-black text-white"
+                      ? "bg-[#211d1d] text-white"
                       : "border border-black/20 bg-white text-black/30"
                   }`}
                 >
@@ -601,7 +725,7 @@ export default function OrderDetailsPage() {
 
               </div>
 
-              <p className="mt-2 text-[7px] tracking-[0.1em] sm:mt-3 sm:text-[9px] sm:tracking-[0.15em]">
+              <p className="mt-2 text-[7px] tracking-[0.12em] sm:mt-3 sm:text-[9px]">
                 DELIVERED
               </p>
 
@@ -611,15 +735,16 @@ export default function OrderDetailsPage() {
 
         </div>
 
+
         {/* ======================================
             PRODUCTS
         ====================================== */}
 
         <div className="mt-8 sm:mt-10">
 
-          <div className="border-b border-black/10 pb-4 sm:pb-5">
+          <div className="border-b border-[#211d1d]/10 pb-4 sm:pb-5">
 
-            <p className="text-[8px] tracking-[0.28em] text-black/40 sm:text-[9px] sm:tracking-[0.3em]">
+            <p className="text-[8px] tracking-[0.3em] text-[#a88989] sm:text-[9px]">
               YOUR ITEMS
             </p>
 
@@ -629,14 +754,15 @@ export default function OrderDetailsPage() {
 
           </div>
 
-          <div className="divide-y divide-black/10 border-b border-black/10 bg-white">
+
+          <div className="divide-y divide-[#211d1d]/10 border-b border-[#211d1d]/10 bg-white">
 
             {items.length > 0 ? (
 
               items.map(
                 (
-                  item: any,
-                  index: number
+                  item,
+                  index
                 ) => {
 
                   const quantity =
@@ -656,42 +782,15 @@ export default function OrderDetailsPage() {
 
                   return (
                     <div
-                      key={index}
-                      className="
-                        flex
-                        flex-col
-                        gap-4
-                        px-5
-                        py-5
-                        sm:gap-5
-                        sm:px-8
-                        sm:py-7
-                        md:flex-row
-                        md:items-center
-                        md:justify-between
-                      "
+                      key={`${item.id ?? "item"}-${index}`}
+                      className="flex flex-col gap-4 px-5 py-5 sm:gap-5 sm:px-8 sm:py-7 md:flex-row md:items-center md:justify-between"
                     >
 
                       {/* PRODUCT */}
 
                       <div className="flex min-w-0 items-center gap-3 sm:gap-5">
 
-                        {/* ==================================
-                            PRODUCT IMAGE
-                        ================================== */}
-
-                        <div
-                          className="
-                            relative
-                            h-24
-                            w-20
-                            shrink-0
-                            overflow-hidden
-                            bg-[#f8f6f2]
-                            sm:h-28
-                            sm:w-24
-                          "
-                        >
+                        <div className="relative h-24 w-20 shrink-0 overflow-hidden bg-[#f5e9e6] sm:h-28 sm:w-24">
 
                           {image ? (
 
@@ -705,40 +804,23 @@ export default function OrderDetailsPage() {
                                 (max-width: 640px) 80px,
                                 96px
                               "
-                              className="
-                                object-cover
-                              "
+                              className="object-cover"
                             />
 
                           ) : (
 
-                            <div
-                              className="
-                                flex
-                                h-full
-                                w-full
-                                items-center
-                                justify-center
-                              "
-                            >
-                              <span
-                                className="
-                                  text-[7px]
-                                  tracking-[0.15em]
-                                  text-black/30
-                                  sm:text-[8px]
-                                  sm:tracking-[0.2em]
-                                "
-                              >
-                                LUMÉRA
+                            <div className="flex h-full w-full items-center justify-center">
+
+                              <span className="text-[7px] tracking-[0.2em] text-[#a88989]">
+                                VIREL
                               </span>
+
                             </div>
 
                           )}
 
                         </div>
 
-                        {/* INFO */}
 
                         <div className="min-w-0">
 
@@ -751,15 +833,17 @@ export default function OrderDetailsPage() {
                           {getItemSize(
                             item
                           ) && (
-                            <p className="mt-1.5 text-[8px] tracking-[0.12em] text-black/40 sm:mt-2 sm:text-[10px] sm:tracking-[0.15em]">
+
+                            <p className="mt-1.5 text-[8px] tracking-[0.15em] text-black/40 sm:mt-2 sm:text-[10px]">
                               SIZE{" "}
                               {getItemSize(
                                 item
                               )}
                             </p>
+
                           )}
 
-                          <p className="mt-1 text-[8px] tracking-[0.12em] text-black/40 sm:text-[10px] sm:tracking-[0.15em]">
+                          <p className="mt-1 text-[8px] tracking-[0.15em] text-black/40 sm:text-[10px]">
                             QTY{" "}
                             {quantity}
                           </p>
@@ -767,6 +851,7 @@ export default function OrderDetailsPage() {
                         </div>
 
                       </div>
+
 
                       {/* PRICE */}
 
@@ -799,8 +884,9 @@ export default function OrderDetailsPage() {
 
         </div>
 
+
         {/* ======================================
-            SUMMARY + PAYMENT
+            PAYMENT + TOTAL
         ====================================== */}
 
         <div className="mt-8 grid gap-8 sm:mt-10 sm:gap-10 md:grid-cols-2">
@@ -809,7 +895,7 @@ export default function OrderDetailsPage() {
 
           <div>
 
-            <p className="border-b border-black/10 pb-4 text-[8px] tracking-[0.28em] text-black/40 sm:pb-5 sm:text-[9px] sm:tracking-[0.3em]">
+            <p className="border-b border-[#211d1d]/10 pb-4 text-[8px] tracking-[0.3em] text-[#a88989] sm:pb-5 sm:text-[9px]">
               PAYMENT
             </p>
 
@@ -834,11 +920,12 @@ export default function OrderDetailsPage() {
 
           </div>
 
+
           {/* TOTAL */}
 
           <div>
 
-            <p className="border-b border-black/10 pb-4 text-[8px] tracking-[0.28em] text-black/40 sm:pb-5 sm:text-[9px] sm:tracking-[0.3em]">
+            <p className="border-b border-[#211d1d]/10 pb-4 text-[8px] tracking-[0.3em] text-[#a88989] sm:pb-5 sm:text-[9px]">
               ORDER SUMMARY
             </p>
 
@@ -867,13 +954,14 @@ export default function OrderDetailsPage() {
 
         </div>
 
+
         {/* ======================================
             SHIPPING
         ====================================== */}
 
         <div className="mt-8 sm:mt-10">
 
-          <p className="border-b border-black/10 pb-4 text-[8px] tracking-[0.28em] text-black/40 sm:pb-5 sm:text-[9px] sm:tracking-[0.3em]">
+          <p className="border-b border-[#211d1d]/10 pb-4 text-[8px] tracking-[0.3em] text-[#a88989] sm:pb-5 sm:text-[9px]">
             DELIVERY INFORMATION
           </p>
 
@@ -898,22 +986,26 @@ export default function OrderDetailsPage() {
 
                     {order.shipping_address
                       ?.name && (
+
                       <p className="text-black">
                         {
                           order.shipping_address
                             .name
                         }
                       </p>
+
                     )}
 
                     {order.shipping_address
                       ?.address && (
+
                       <p>
                         {
                           order.shipping_address
                             .address
                         }
                       </p>
+
                     )}
 
                     {(order.shipping_address
@@ -946,12 +1038,14 @@ export default function OrderDetailsPage() {
 
                     {order.shipping_address
                       ?.phone && (
+
                       <p className="mt-2">
                         {
                           order.shipping_address
                             .phone
                         }
                       </p>
+
                     )}
 
                   </>
@@ -973,13 +1067,14 @@ export default function OrderDetailsPage() {
 
         </div>
 
+
         {/* ======================================
-            ACCOUNT EMAIL
+            EMAIL
         ====================================== */}
 
-        <div className="mt-8 border-t border-black/10 pt-6 sm:mt-10 sm:pt-8">
+        <div className="mt-8 border-t border-[#211d1d]/10 pt-6 sm:mt-10 sm:pt-8">
 
-          <p className="text-[8px] tracking-[0.22em] text-black/40 sm:text-[9px] sm:tracking-[0.25em]">
+          <p className="text-[8px] tracking-[0.25em] text-[#a88989] sm:text-[9px]">
             ORDER PLACED BY
           </p>
 
@@ -989,60 +1084,43 @@ export default function OrderDetailsPage() {
 
         </div>
 
+
         {/* ======================================
-            BOTTOM NAV
+            NAVIGATION
         ====================================== */}
 
         <div className="mt-8 flex flex-col gap-3 sm:mt-12 sm:flex-row sm:flex-wrap sm:gap-6">
 
           <Link
             href="/account/orders"
-            className="
-              inline-flex
-              w-full
-              items-center
-              justify-center
-              bg-black
-              px-7
-              py-4
-              text-[9px]
-              tracking-[0.22em]
-              text-white
-              transition
-              hover:bg-black/80
-              sm:w-auto
-              sm:px-8
-              sm:text-[10px]
-              sm:tracking-[0.25em]
-            "
+            className="inline-flex w-full items-center justify-center bg-[#211d1d] px-7 py-4 text-[9px] tracking-[0.22em] text-white transition hover:bg-[#a88989] sm:w-auto sm:px-8 sm:text-[10px]"
           >
             BACK TO MY ORDERS
           </Link>
 
           <Link
-            href="/dresses"
-            className="
-              inline-flex
-              w-full
-              items-center
-              justify-center
-              border
-              border-black
-              px-7
-              py-4
-              text-[9px]
-              tracking-[0.22em]
-              transition
-              hover:bg-black
-              hover:text-white
-              sm:w-auto
-              sm:px-8
-              sm:text-[10px]
-              sm:tracking-[0.25em]
-            "
+            href="/shop"
+            className="inline-flex w-full items-center justify-center border border-[#211d1d] px-7 py-4 text-[9px] tracking-[0.22em] transition hover:bg-[#211d1d] hover:text-white sm:w-auto sm:px-8 sm:text-[10px]"
           >
             CONTINUE SHOPPING
           </Link>
+
+        </div>
+
+
+        {/* ======================================
+            BRAND
+        ====================================== */}
+
+        <div className="mt-10 border-t border-[#211d1d]/10 pt-7 text-center sm:mt-12 sm:pt-8">
+
+          <p className="font-serif text-lg tracking-[0.25em]">
+            VIREL
+          </p>
+
+          <p className="mt-2 text-[8px] tracking-[0.3em] text-[#a88989]">
+            BRIDAL SHOES · REFINED SILHOUETTES
+          </p>
 
         </div>
 

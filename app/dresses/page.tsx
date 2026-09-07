@@ -61,13 +61,13 @@ export default async function DressesPage() {
   return (
     <main className="min-h-screen bg-[#faf9f7] text-black">
 
-      <Header active="dresses" />
+      <Header active="shop" />
 
       {/* TITLE */}
       <section className="px-5 pb-10 pt-12 sm:px-8 sm:pb-12 sm:pt-14 lg:px-12 lg:pb-12 lg:pt-16">
 
         <p className="text-[9px] tracking-[0.32em] text-gray-400 sm:text-[10px]">
-          LUMÉRA COLLECTION
+          VIREL COLLECTION
         </p>
 
         <h1 className="mt-3 font-serif text-4xl sm:mt-4 sm:text-5xl">

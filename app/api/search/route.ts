@@ -10,13 +10,28 @@ export async function GET(
       new URL(request.url);
 
     const query =
-      searchParams.get("q")?.trim() || "";
+      searchParams
+        .get("q")
+        ?.trim() || "";
+
+    // =====================================================
+    // EMPTY QUERY
+    // =====================================================
 
     if (!query) {
-      return NextResponse.json([]);
+      return NextResponse.json(
+        []
+      );
     }
 
-    const { data, error } =
+    // =====================================================
+    // SEARCH PRODUCTS
+    // =====================================================
+
+    const {
+      data,
+      error,
+    } =
       await supabaseAdmin
         .from("products")
         .select(
@@ -26,15 +41,30 @@ export async function GET(
             slug,
             price,
             currency,
-            image_1
+            image_1,
+            image_2,
+            category
           `
         )
-        .eq("is_active", true)
-        .ilike("name", `%${query}%`)
-        .order("created_at", {
-          ascending: false,
-        })
+        .eq(
+          "is_active",
+          true
+        )
+        .ilike(
+          "name",
+          `%${query}%`
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        )
         .limit(8);
+
+    // =====================================================
+    // DATABASE ERROR
+    // =====================================================
 
     if (error) {
       console.error(
@@ -53,10 +83,23 @@ export async function GET(
       );
     }
 
+    // =====================================================
+    // SUCCESS
+    // =====================================================
+
     return NextResponse.json(
-      data ?? []
+      data ?? [],
+      {
+        status: 200,
+        headers: {
+          "Cache-Control":
+            "no-store",
+        },
+      }
     );
+
   } catch (error) {
+
     console.error(
       "Search request error:",
       error

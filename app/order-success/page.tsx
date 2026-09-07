@@ -1,25 +1,47 @@
 import Link from "next/link";
 
-export default function OrderSuccessPage() {
-  return (
-    <main className="min-h-screen bg-[#f8f6f2] text-black">
+type PageProps = {
+  searchParams: Promise<{
+    order?: string;
+  }>;
+};
 
-      {/* HEADER */}
-      <header className="flex h-20 items-center justify-center border-b border-black/10 bg-[#f8f6f2] sm:h-24">
+export default async function OrderSuccessPage({
+  searchParams,
+}: PageProps) {
+  const params = await searchParams;
+
+  const orderNumber =
+    params.order?.trim() || "";
+
+  return (
+    <main className="min-h-screen bg-[#fcf8f6] text-[#211d1d]">
+
+      {/* ========================================
+          HEADER
+      ======================================== */}
+
+      <header className="flex h-20 items-center justify-center border-b border-[#211d1d]/10 bg-[#fcf8f6] sm:h-24">
+
         <Link
           href="/"
           className="
             font-serif
             text-2xl
-            tracking-[0.28em]
+            tracking-[0.32em]
             sm:text-3xl
           "
         >
-          LUMÉRA
+          VIREL
         </Link>
+
       </header>
 
-      {/* CONTENT */}
+
+      {/* ========================================
+          CONTENT
+      ======================================== */}
+
       <section
         className="
           flex
@@ -33,42 +55,58 @@ export default function OrderSuccessPage() {
           sm:py-20
         "
       >
-        <div className="w-full max-w-[720px] text-center">
 
-          {/* CHECK */}
+        <div className="w-full max-w-[760px] text-center">
+
+
+          {/* ====================================
+              SUCCESS ICON
+          ==================================== */}
+
           <div
             className="
               mx-auto
               flex
-              h-12
-              w-12
+              h-14
+              w-14
               items-center
               justify-center
               rounded-full
               border
-              border-black/70
+              border-[#211d1d]/70
+              bg-white
               text-lg
-              sm:h-14
-              sm:w-14
+              sm:h-16
+              sm:w-16
               sm:text-xl
             "
           >
             ✓
           </div>
 
+
+          {/* ====================================
+              LABEL
+          ==================================== */}
+
           <p
             className="
               mt-7
               text-[9px]
-              tracking-[0.35em]
-              text-gray-400
+              tracking-[0.38em]
+              text-[#a88989]
               sm:mt-9
-              sm:text-[11px]
-              sm:tracking-[0.4em]
+              sm:text-[10px]
+              sm:tracking-[0.45em]
             "
           >
             ORDER CONFIRMED
           </p>
+
+
+          {/* ====================================
+              TITLE
+          ==================================== */}
 
           <h1
             className="
@@ -84,6 +122,11 @@ export default function OrderSuccessPage() {
             Thank You
           </h1>
 
+
+          {/* ====================================
+              MESSAGE
+          ==================================== */}
+
           <p
             className="
               mx-auto
@@ -91,38 +134,98 @@ export default function OrderSuccessPage() {
               max-w-xl
               text-xs
               leading-6
-              text-gray-600
+              text-[#756b6b]
               sm:mt-7
               sm:text-sm
               sm:leading-7
             "
           >
             Your payment has been completed successfully.
-            Your order is now being prepared with care before
-            beginning its journey to you.
+            Your VIREL order is now being prepared with care
+            before beginning its journey to you.
           </p>
 
-          {/* PAYMENT STATUS */}
+
+          {/* ====================================
+              ORDER NUMBER
+          ==================================== */}
+
+          {orderNumber && (
+            <div
+              className="
+                mx-auto
+                mt-8
+                max-w-xl
+                border
+                border-[#211d1d]/10
+                bg-white
+                px-6
+                py-6
+                sm:mt-10
+                sm:px-8
+                sm:py-7
+              "
+            >
+
+              <p
+                className="
+                  text-[9px]
+                  tracking-[0.3em]
+                  text-[#a88989]
+                  sm:text-[10px]
+                  sm:tracking-[0.35em]
+                "
+              >
+                ORDER NUMBER
+              </p>
+
+              <p
+                className="
+                  mt-3
+                  font-serif
+                  text-2xl
+                  tracking-[0.08em]
+                  sm:text-3xl
+                "
+              >
+                {orderNumber}
+              </p>
+
+              <p className="mt-3 text-[10px] text-[#9b8d8d] sm:text-xs">
+                Please keep this number for your records.
+              </p>
+
+            </div>
+          )}
+
+
+          {/* ====================================
+              PAYMENT STATUS
+          ==================================== */}
+
           <div
             className="
               mx-auto
               mt-9
               max-w-xl
               border-y
-              border-black/10
+              border-[#211d1d]/10
+              bg-white/50
               py-6
               sm:mt-12
               sm:py-8
             "
           >
+
             <div className="flex items-center justify-between gap-4">
 
               <div className="text-left">
+
                 <p
                   className="
                     text-[9px]
                     tracking-[0.22em]
-                    text-gray-400
+                    text-[#a88989]
                     sm:text-[10px]
                     sm:tracking-[0.25em]
                   "
@@ -133,9 +236,12 @@ export default function OrderSuccessPage() {
                 <p className="mt-2 text-xs sm:text-sm">
                   PayPal
                 </p>
+
               </div>
 
+
               <div className="flex items-center gap-2 text-xs">
+
                 <span
                   className="
                     flex
@@ -144,7 +250,7 @@ export default function OrderSuccessPage() {
                     items-center
                     justify-center
                     rounded-full
-                    bg-black
+                    bg-[#211d1d]
                     text-[9px]
                     text-white
                   "
@@ -152,28 +258,38 @@ export default function OrderSuccessPage() {
                   ✓
                 </span>
 
-                <span>Paid</span>
+                <span>
+                  Paid
+                </span>
+
               </div>
 
             </div>
+
           </div>
 
-          {/* NEXT */}
+
+          {/* ====================================
+              NEXT STEPS
+          ==================================== */}
+
           <div className="mt-9 sm:mt-10">
 
             <p
               className="
                 text-[9px]
-                tracking-[0.28em]
-                text-gray-400
+                tracking-[0.3em]
+                text-[#a88989]
                 sm:text-[10px]
-                sm:tracking-[0.3em]
+                sm:tracking-[0.34em]
               "
             >
               WHAT HAPPENS NEXT
             </p>
 
+
             {/* TIMELINE */}
+
             <div
               className="
                 mx-auto
@@ -186,6 +302,7 @@ export default function OrderSuccessPage() {
             >
 
               {/* PAYMENT */}
+
               <div className="relative flex flex-col items-center">
 
                 <div
@@ -197,7 +314,7 @@ export default function OrderSuccessPage() {
                     items-center
                     justify-center
                     rounded-full
-                    bg-black
+                    bg-[#211d1d]
                     text-[10px]
                     text-white
                   "
@@ -218,13 +335,15 @@ export default function OrderSuccessPage() {
                   PAYMENT
                 </p>
 
-                <p className="mt-1 text-[9px] text-gray-400 sm:text-[10px]">
+                <p className="mt-1 text-[9px] text-[#a89c9c] sm:text-[10px]">
                   Confirmed
                 </p>
 
               </div>
 
+
               {/* PREPARATION */}
+
               <div className="relative flex flex-col items-center">
 
                 <div
@@ -237,8 +356,8 @@ export default function OrderSuccessPage() {
                     justify-center
                     rounded-full
                     border
-                    border-black
-                    bg-[#f8f6f2]
+                    border-[#211d1d]
+                    bg-[#fcf8f6]
                     text-[10px]
                   "
                 >
@@ -258,13 +377,15 @@ export default function OrderSuccessPage() {
                   PREPARATION
                 </p>
 
-                <p className="mt-1 text-[9px] text-gray-400 sm:text-[10px]">
+                <p className="mt-1 text-[9px] text-[#a89c8c] sm:text-[10px]">
                   Up next
                 </p>
 
               </div>
 
+
               {/* SHIPPING */}
+
               <div className="relative flex flex-col items-center">
 
                 <div
@@ -277,10 +398,10 @@ export default function OrderSuccessPage() {
                     justify-center
                     rounded-full
                     border
-                    border-gray-300
-                    bg-[#f8f6f2]
+                    border-[#d5ccca]
+                    bg-[#fcf8f6]
                     text-[10px]
-                    text-gray-400
+                    text-[#aaa0a0]
                   "
                 >
                   03
@@ -299,13 +420,16 @@ export default function OrderSuccessPage() {
                   SHIPPING
                 </p>
 
-                <p className="mt-1 text-[9px] text-gray-400 sm:text-[10px]">
+                <p className="mt-1 text-[9px] text-[#a89c8c] sm:text-[10px]">
                   Final step
                 </p>
 
               </div>
 
             </div>
+
+
+            {/* DESCRIPTION */}
 
             <p
               className="
@@ -314,7 +438,7 @@ export default function OrderSuccessPage() {
                 max-w-lg
                 text-[11px]
                 leading-5
-                text-gray-500
+                text-[#756b6b]
                 sm:mt-9
                 sm:text-xs
                 sm:leading-6
@@ -326,7 +450,11 @@ export default function OrderSuccessPage() {
 
           </div>
 
-          {/* ACTIONS */}
+
+          {/* ====================================
+              ACTIONS
+          ==================================== */}
+
           <div
             className="
               mt-10
@@ -338,22 +466,21 @@ export default function OrderSuccessPage() {
             "
           >
 
-            {/* CONTINUE SHOPPING */}
             <Link
-              href="/dresses"
+              href="/shop"
               className="
                 flex
                 min-h-12
                 items-center
                 justify-center
-                bg-black
+                bg-[#211d1d]
                 px-6
                 py-4
                 text-[9px]
                 tracking-[0.22em]
                 text-white
                 transition
-                hover:bg-neutral-800
+                hover:bg-[#a88989]
                 sm:text-[10px]
                 sm:tracking-[0.25em]
               "
@@ -361,7 +488,7 @@ export default function OrderSuccessPage() {
               CONTINUE SHOPPING
             </Link>
 
-            {/* VIEW ORDERS */}
+
             <Link
               href="/account/orders"
               className="
@@ -370,14 +497,14 @@ export default function OrderSuccessPage() {
                 items-center
                 justify-center
                 border
-                border-black
+                border-[#211d1d]
                 bg-transparent
                 px-6
                 py-4
                 text-[9px]
                 tracking-[0.22em]
                 transition
-                hover:bg-black
+                hover:bg-[#211d1d]
                 hover:text-white
                 sm:text-[10px]
                 sm:tracking-[0.25em]
@@ -386,7 +513,7 @@ export default function OrderSuccessPage() {
               VIEW MY ORDERS
             </Link>
 
-            {/* RETURN HOME */}
+
             <Link
               href="/"
               className="
@@ -395,14 +522,14 @@ export default function OrderSuccessPage() {
                 items-center
                 justify-center
                 border
-                border-black
+                border-[#211d1d]
                 bg-transparent
                 px-6
                 py-4
                 text-[9px]
                 tracking-[0.22em]
                 transition
-                hover:bg-black
+                hover:bg-[#211d1d]
                 hover:text-white
                 sm:text-[10px]
                 sm:tracking-[0.25em]
@@ -413,23 +540,34 @@ export default function OrderSuccessPage() {
 
           </div>
 
-          {/* SUPPORT */}
-          <p
-            className="
-              mt-10
-              text-[9px]
-              leading-5
-              text-gray-400
-              sm:mt-12
-              sm:text-[10px]
-            "
-          >
-            Need help with your order?
-            <br />
-            Our client care team will be happy to assist you.
-          </p>
+
+          {/* ====================================
+              SUPPORT
+          ==================================== */}
+
+          <div className="mt-10 sm:mt-12">
+
+            <p
+              className="
+                text-[9px]
+                leading-5
+                text-[#a89c9c]
+                sm:text-[10px]
+              "
+            >
+              Need help with your order?
+              <br />
+              Our client care team will be happy to assist you.
+            </p>
+
+            <p className="mt-5 text-[8px] tracking-[0.3em] text-[#b39797]">
+              VIREL · BRIDAL SHOES
+            </p>
+
+          </div>
 
         </div>
+
       </section>
 
     </main>

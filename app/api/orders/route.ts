@@ -11,26 +11,37 @@ import {
 
 type CartItemInput = {
   id: string;
+  color: string;
   size: string;
   quantity: number;
 };
 
-export async function POST(
-  request: Request
-) {
+export async function POST(request: Request) {
   try {
-    // =========================================
+    // =====================================================
     // 1. GET LOGGED-IN SUPABASE USER
-    // =========================================
+    // =====================================================
 
     const supabase =
       await createClient();
 
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+      error: userError,
+    } =
+      await supabase.auth.getUser();
 
-    if (!user?.email) {
+    if (userError) {
+      console.error(
+        "Get current user error:",
+        userError
+      );
+    }
+
+    if (
+      !user?.id ||
+      !user.email
+    ) {
       return NextResponse.json(
         {
           error:
@@ -43,57 +54,170 @@ export async function POST(
     }
 
     const accountEmail =
-      user.email.trim();
+      user.email
+        .trim()
+        .toLowerCase();
 
-    // =========================================
-    // 2. READ CHECKOUT DATA
-    // =========================================
+    // =====================================================
+    // 2. READ REQUEST BODY
+    // =====================================================
 
     const body =
       await request.json();
 
-    const {
-      paypalOrderId,
+    const paypalOrderId =
+      typeof body.paypalOrderId ===
+      "string"
+        ? body.paypalOrderId.trim()
+        : "";
 
-      firstName,
-      lastName,
+    const firstName =
+      typeof body.firstName ===
+      "string"
+        ? body.firstName.trim()
+        : "";
 
-      // Email này chỉ dùng cho checkout/email.
-      // Không dùng để xác định owner của order.
-      email,
+    const lastName =
+      typeof body.lastName ===
+      "string"
+        ? body.lastName.trim()
+        : "";
 
-      phone,
+    const checkoutEmail =
+      typeof body.email ===
+      "string"
+        ? body.email.trim()
+        : "";
 
-      country,
-      addressLine1,
-      addressLine2,
-      city,
-      stateRegion,
-      postalCode,
+    const phone =
+      typeof body.phone ===
+      "string"
+        ? body.phone.trim()
+        : "";
 
-      items,
-      shippingMethod,
-    } = body;
+    const country =
+      typeof body.country ===
+      "string"
+        ? body.country.trim()
+        : "";
 
-    // =========================================
+    const addressLine1 =
+      typeof body.addressLine1 ===
+      "string"
+        ? body.addressLine1.trim()
+        : "";
+
+    const addressLine2 =
+      typeof body.addressLine2 ===
+      "string"
+        ? body.addressLine2.trim()
+        : "";
+
+    const city =
+      typeof body.city ===
+      "string"
+        ? body.city.trim()
+        : "";
+
+    const stateRegion =
+      typeof body.stateRegion ===
+      "string"
+        ? body.stateRegion.trim()
+        : "";
+
+    const postalCode =
+      typeof body.postalCode ===
+      "string"
+        ? body.postalCode.trim()
+        : "";
+
+    const shippingMethod =
+      body.shippingMethod;
+
+    const items =
+      body.items;
+
+    // =====================================================
     // 3. BASIC VALIDATION
-    // =========================================
+    // =====================================================
 
-    if (
-      !paypalOrderId ||
-      !firstName ||
-      !lastName ||
-      !country ||
-      !addressLine1 ||
-      !city ||
-      !postalCode ||
-      !Array.isArray(items) ||
-      items.length === 0
-    ) {
+    if (!paypalOrderId) {
       return NextResponse.json(
         {
           error:
-            "Missing required order information.",
+            "Missing PayPal order ID.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!firstName) {
+      return NextResponse.json(
+        {
+          error:
+            "First name is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!lastName) {
+      return NextResponse.json(
+        {
+          error:
+            "Last name is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!country) {
+      return NextResponse.json(
+        {
+          error:
+            "Country is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!addressLine1) {
+      return NextResponse.json(
+        {
+          error:
+            "Address is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!city) {
+      return NextResponse.json(
+        {
+          error:
+            "City is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!postalCode) {
+      return NextResponse.json(
+        {
+          error:
+            "Postal code is required.",
         },
         {
           status: 400,
@@ -118,43 +242,46 @@ export async function POST(
       );
     }
 
-    const cartItems =
-      items as CartItemInput[];
-
-    // =========================================
-    // 4. CHECK DUPLICATE PAYPAL ORDER
-    // =========================================
-
-    const {
-      data: existingOrder,
-    } = await supabaseAdmin
-      .from("orders")
-      .select("*")
-      .eq(
-        "paypal_order_id",
-        paypalOrderId
-      )
-      .maybeSingle();
-
-    if (existingOrder) {
-      return NextResponse.json({
-        success: true,
-        order: existingOrder,
-      });
+    if (
+      !Array.isArray(items) ||
+      items.length === 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Your shopping bag is empty.",
+        },
+        {
+          status: 400,
+        }
+      );
     }
 
-    // =========================================
-    // 5. VALIDATE CART
-    // =========================================
+    // =====================================================
+    // 4. NORMALIZE CART ITEMS
+    //
+    // IMPORTANT:
+    //
+    // Product with colors:
+    //   Red + S
+    //
+    // Product without colors:
+    //   Ivory + S
+    //
+    // =====================================================
 
-    for (const item of cartItems) {
+    const cartItems:
+      CartItemInput[] = [];
+
+    for (
+      const item of items
+    ) {
       if (
-        !item.id ||
-        !item.size ||
-        !Number.isInteger(
-          Number(item.quantity)
-        ) ||
-        Number(item.quantity) < 1
+        !item ||
+        typeof item.id !==
+          "string" ||
+        typeof item.size !==
+          "string"
       ) {
         return NextResponse.json(
           {
@@ -166,40 +293,152 @@ export async function POST(
           }
         );
       }
+
+      const id =
+        item.id.trim();
+
+      const color =
+        typeof item.color ===
+        "string"
+          ? item.color.trim()
+          : "Ivory";
+
+      const size =
+        item.size.trim();
+
+      const quantity =
+        Number(
+          item.quantity
+        );
+
+      if (
+        !id ||
+        !size
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid cart item.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      if (
+        !Number.isInteger(
+          quantity
+        ) ||
+        quantity < 1 ||
+        quantity > 100
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid item quantity.",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      cartItems.push({
+        id,
+        color:
+          color || "Ivory",
+        size,
+        quantity,
+      });
     }
+
+    // =====================================================
+    // 5. CHECK FOR EXISTING ORDER
+    //
+    // Prevent duplicate order creation.
+    // =====================================================
+
+    const {
+      data: existingOrder,
+      error:
+        existingOrderError,
+    } =
+      await supabaseAdmin
+        .from("orders")
+        .select("*")
+        .eq(
+          "paypal_order_id",
+          paypalOrderId
+        )
+        .maybeSingle();
+
+    if (
+      existingOrderError
+    ) {
+      console.error(
+        "Existing order lookup error:",
+        existingOrderError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Unable to verify existing order.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (existingOrder) {
+      return NextResponse.json(
+        {
+          success: true,
+          order:
+            existingOrder,
+        },
+        {
+          status: 200,
+        }
+      );
+    }
+
+    // =====================================================
+    // 6. GET REAL PRODUCT DATA
+    // =====================================================
 
     const productIds = [
       ...new Set(
         cartItems.map(
-          (item) => item.id
+          (item) =>
+            item.id
         )
       ),
     ];
 
-    // =========================================
-    // 6. GET REAL PRODUCT DATA
-    // =========================================
-
     const {
       data: products,
-      error: productError,
-    } = await supabaseAdmin
-      .from("products")
-      .select(
-        `
-        id,
-        name,
-        price,
-        image_1,
-        sizes,
-        stock,
-        is_active
-        `
-      )
-      .in(
-        "id",
-        productIds
-      );
+      error:
+        productError,
+    } =
+      await supabaseAdmin
+        .from("products")
+        .select(
+          `
+          id,
+          name,
+          price,
+          image_1,
+          sizes,
+          is_active
+          `
+        )
+        .in(
+          "id",
+          productIds
+        );
 
     if (
       productError ||
@@ -236,6 +475,57 @@ export async function POST(
       );
     }
 
+    // =====================================================
+    // 7. GET REAL VARIANT DATA
+    //
+    // IMPORTANT:
+    // color is now included.
+    // =====================================================
+
+    const {
+      data: variants,
+      error:
+        variantError,
+    } =
+      await supabaseAdmin
+        .from("product_variants")
+        .select(
+          `
+          product_id,
+          color,
+          size,
+          stock
+          `
+        )
+        .in(
+          "product_id",
+          productIds
+        );
+
+    if (
+      variantError ||
+      !variants
+    ) {
+      console.error(
+        "Variant lookup error:",
+        variantError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Unable to verify product sizes and colors.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // =====================================================
+    // 8. SERVER CALCULATES PRICE + VALIDATES VARIANTS
+    // =====================================================
+
     let subtotal = 0;
 
     const safeItems: {
@@ -243,19 +533,18 @@ export async function POST(
       name: string;
       price: number;
       image: string;
+      color: string;
       size: string;
       quantity: number;
     }[] = [];
 
-    // =========================================
-    // 7. SERVER CALCULATES PRICE
-    // =========================================
-
-    for (const cartItem of cartItems) {
+    for (
+      const cartItem of cartItems
+    ) {
       const product =
         products.find(
-          (product) =>
-            product.id ===
+          (item) =>
+            item.id ===
             cartItem.id
         );
 
@@ -271,37 +560,27 @@ export async function POST(
         );
       }
 
-      if (!product.is_active) {
-        return NextResponse.json(
-          {
-            error:
-              `${product.name} is unavailable.`,
-          },
-          {
-            status: 400,
-          }
-        );
-      }
-
-      const quantity =
-        Number(
-          cartItem.quantity
-        );
+      // ===================================================
+      // PRODUCT ACTIVE
+      // ===================================================
 
       if (
-        Number(product.stock) <
-        quantity
+        !product.is_active
       ) {
         return NextResponse.json(
           {
             error:
-              `Not enough stock for ${product.name}.`,
+              `${product.name} is currently unavailable.`,
           },
           {
             status: 400,
           }
         );
       }
+
+      // ===================================================
+      // CHECK SIZE
+      // ===================================================
 
       const allowedSizes =
         Array.isArray(
@@ -318,40 +597,159 @@ export async function POST(
         return NextResponse.json(
           {
             error:
-              `Invalid size for ${product.name}.`,
+              `Size ${cartItem.size} is not available for ${product.name}.`,
           },
           {
-            status: 400,
+            status: 400
           }
         );
       }
 
+      // ===================================================
+      // FIND EXACT VARIANT
+      //
+      // product_id
+      // + color
+      // + size
+      //
+      // THIS IS THE IMPORTANT PART.
+      // ===================================================
+
+      const variant =
+        variants.find(
+          (item) =>
+            item.product_id ===
+              cartItem.id &&
+            item.size ===
+              cartItem.size &&
+            (
+              item.color ??
+              "Ivory"
+            ) ===
+              cartItem.color
+        );
+
+      if (!variant) {
+        return NextResponse.json(
+          {
+            error:
+              `Color ${cartItem.color}, size ${cartItem.size} is not available for ${product.name}.`,
+          },
+          {
+            status: 400
+          }
+        );
+      }
+
+      // ===================================================
+      // CHECK EXACT VARIANT STOCK
+      // ===================================================
+
+      const variantStock =
+        Number(
+          variant.stock
+        );
+
+      if (
+        !Number.isInteger(
+          variantStock
+        ) ||
+        variantStock <
+          cartItem.quantity
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              `Not enough stock for ${product.name} — ${cartItem.color}, size ${cartItem.size}. Only ${Math.max(
+                0,
+                variantStock
+              )} left.`,
+          },
+          {
+            status: 400
+          }
+        );
+      }
+
+      // ===================================================
+      // SERVER PRICE
+      // ===================================================
+
       const realPrice =
-        Number(product.price);
+        Number(
+          product.price
+        );
+
+      if (
+        !Number.isFinite(
+          realPrice
+        ) ||
+        realPrice < 0
+      ) {
+        console.error(
+          "Invalid product price:",
+          {
+            productId:
+              product.id,
+            price:
+              product.price,
+          }
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              `Invalid price for ${product.name}.`,
+          },
+          {
+            status: 500
+          }
+        );
+      }
+
+      // ===================================================
+      // SUBTOTAL
+      // ===================================================
 
       subtotal +=
-        realPrice * quantity;
+        realPrice *
+        cartItem.quantity;
+
+      // ===================================================
+      // SAVE VERIFIED ITEM
+      //
+      // IMPORTANT:
+      // color is now stored in order.items.
+      // ===================================================
 
       safeItems.push({
-        id: product.id,
+        id:
+          product.id,
 
-        name: product.name,
+        name:
+          product.name,
 
-        price: realPrice,
+        price:
+          realPrice,
 
         image:
           product.image_1 ||
           "/image/image_1.png",
 
-        size: cartItem.size,
+        color:
+          cartItem.color,
 
-        quantity,
+        size:
+          cartItem.size,
+
+        quantity:
+          cartItem.quantity,
       });
     }
 
-    // =========================================
-    // 8. CALCULATE SHIPPING / TOTAL
-    // =========================================
+    // =====================================================
+    // 9. CALCULATE SHIPPING
+    // =====================================================
 
     const shippingFee =
       shippingMethod ===
@@ -377,13 +775,32 @@ export async function POST(
         ).toFixed(2)
       );
 
-    // =========================================
-    // 9. VERIFY PAYPAL PAYMENT
-    // =========================================
+    if (
+      !Number.isFinite(
+        safeTotal
+      ) ||
+      safeTotal <= 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid order total.",
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    // =====================================================
+    // 10. VERIFY PAYPAL ORDER
+    // =====================================================
 
     const paypalResponse =
       await paypalRequest(
-        `/v2/checkout/orders/${paypalOrderId}`,
+        `/v2/checkout/orders/${encodeURIComponent(
+          paypalOrderId
+        )}`,
         {
           method: "GET",
         }
@@ -392,7 +809,9 @@ export async function POST(
     const paypalData =
       await paypalResponse.json();
 
-    if (!paypalResponse.ok) {
+    if (
+      !paypalResponse.ok
+    ) {
       console.error(
         "PayPal verification error:",
         paypalData
@@ -404,22 +823,49 @@ export async function POST(
             "Unable to verify PayPal payment.",
         },
         {
-          status: 400,
+          status: 400
         }
       );
     }
 
-    const capture =
-      paypalData
-        ?.purchase_units?.[0]
-        ?.payments?.captures?.[0];
+    // =====================================================
+    // 11. VERIFY PAYPAL ORDER ID
+    // =====================================================
+
+    if (
+      paypalData.id &&
+      paypalData.id !==
+        paypalOrderId
+    ) {
+      console.error(
+        "PayPal order ID mismatch:",
+        {
+          requested:
+            paypalOrderId,
+
+          returned:
+            paypalData.id,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "PayPal order verification failed.",
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    // =====================================================
+    // 12. VERIFY PAYPAL STATUS
+    // =====================================================
 
     if (
       paypalData.status !==
-        "COMPLETED" ||
-      !capture ||
-      capture.status !==
-        "COMPLETED"
+      "COMPLETED"
     ) {
       return NextResponse.json(
         {
@@ -427,14 +873,85 @@ export async function POST(
             "PayPal payment has not been completed.",
         },
         {
-          status: 400,
+          status: 400
         }
       );
     }
 
-    // =========================================
-    // 10. VERIFY PAYMENT AMOUNT
-    // =========================================
+    // =====================================================
+    // 13. GET PAYPAL CAPTURE
+    // =====================================================
+
+    const purchaseUnit =
+      Array.isArray(
+        paypalData.purchase_units
+      )
+        ? paypalData
+            .purchase_units[0]
+        : null;
+
+    const capture =
+      purchaseUnit
+        ?.payments
+        ?.captures?.[0];
+
+    if (!capture) {
+      console.error(
+        "No PayPal capture found:",
+        paypalData
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "PayPal payment capture could not be verified.",
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    // =====================================================
+    // 14. VERIFY CAPTURE STATUS
+    // =====================================================
+
+    if (
+      capture.status !==
+      "COMPLETED"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "PayPal payment capture has not been completed.",
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    const captureId =
+      typeof capture.id ===
+      "string"
+        ? capture.id.trim()
+        : "";
+
+    if (!captureId) {
+      return NextResponse.json(
+        {
+          error:
+            "PayPal capture ID is missing.",
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    // =====================================================
+    // 15. VERIFY PAYPAL AMOUNT
+    // =====================================================
 
     const paypalAmount =
       Number(
@@ -442,12 +959,41 @@ export async function POST(
       );
 
     const paypalCurrency =
-      capture.amount
-        ?.currency_code;
+      typeof capture.amount
+        ?.currency_code ===
+      "string"
+        ? capture.amount
+            .currency_code
+            .toUpperCase()
+        : "";
 
     if (
       paypalCurrency !==
         "USD" ||
+      !Number.isFinite(
+        paypalAmount
+      )
+    ) {
+      console.error(
+        "Invalid PayPal payment:",
+        {
+          paypalAmount,
+          paypalCurrency,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Invalid PayPal payment information.",
+        },
+        {
+          status: 400
+        }
+      );
+    }
+
+    if (
       Math.abs(
         paypalAmount -
           safeTotal
@@ -458,8 +1004,12 @@ export async function POST(
         {
           expected:
             safeTotal,
+
           paypal:
             paypalAmount,
+
+          currency:
+            paypalCurrency,
         }
       );
 
@@ -469,14 +1019,14 @@ export async function POST(
             "Payment amount does not match the order total.",
         },
         {
-          status: 400,
+          status: 400
         }
       );
     }
 
-    // =========================================
-    // 11. CREATE UNIQUE ORDER NUMBER
-    // =========================================
+    // =====================================================
+    // 16. CREATE UNIQUE ORDER NUMBER
+    // =====================================================
 
     const orderNumber =
       "LMR-" +
@@ -484,21 +1034,28 @@ export async function POST(
         .toString()
         .slice(-8);
 
-    // =========================================
-    // 12. SAVE VERIFIED ORDER
-    // =========================================
+    // =====================================================
+    // 17. FINALIZE ORDER
     //
-    // IMPORTANT:
-    // p_email = accountEmail
+    // SQL function now receives:
     //
-    // This is the email of the logged-in
-    // Supabase account, NOT the arbitrary
-    // checkout email.
+    // id
+    // name
+    // price
+    // image
+    // color
+    // size
+    // quantity
     //
+    // finalize_order then locks:
+    //
+    // product_id + color + size
+    // =====================================================
 
     const {
       data: order,
-      error: orderError,
+      error:
+        orderError,
     } =
       await supabaseAdmin.rpc(
         "finalize_order",
@@ -510,7 +1067,10 @@ export async function POST(
             paypalOrderId,
 
           p_paypal_capture_id:
-            capture.id,
+            captureId,
+
+          p_user_id:
+            user.id,
 
           p_first_name:
             firstName,
@@ -522,7 +1082,7 @@ export async function POST(
             accountEmail,
 
           p_phone:
-            phone || "",
+            phone,
 
           p_country:
             country,
@@ -531,15 +1091,13 @@ export async function POST(
             addressLine1,
 
           p_address_line2:
-            addressLine2 ||
-            "",
+            addressLine2,
 
           p_city:
             city,
 
           p_state_region:
-            stateRegion ||
-            "",
+            stateRegion,
 
           p_postal_code:
             postalCode,
@@ -561,9 +1119,9 @@ export async function POST(
         }
       );
 
-    // =========================================
-    // 13. CHECK RPC ERROR
-    // =========================================
+    // =====================================================
+    // 18. RPC ERROR
+    // =====================================================
 
     if (orderError) {
       console.error(
@@ -574,10 +1132,11 @@ export async function POST(
       return NextResponse.json(
         {
           error:
+            orderError.message ||
             "Payment succeeded, but the order could not be saved.",
         },
         {
-          status: 500,
+          status: 500
         }
       );
     }
@@ -593,14 +1152,16 @@ export async function POST(
             "Payment succeeded, but no order was returned.",
         },
         {
-          status: 500,
+          status: 500
         }
       );
     }
 
-    // =========================================
-    // 14. SEND CONFIRMATION EMAIL
-    // =========================================
+    // =====================================================
+    // 19. SEND CONFIRMATION EMAIL
+    //
+    // Email failure does NOT invalidate the order.
+    // =====================================================
 
     try {
       await sendOrderConfirmationEmail(
@@ -619,27 +1180,50 @@ export async function POST(
       );
     }
 
-    // =========================================
-    // 15. RETURN CREATED ORDER
-    // =========================================
+    // =====================================================
+    // 20. RETURN ORDER
+    // =====================================================
 
     console.log(
       "ORDER CREATED:",
       {
         orderNumber:
-          order?.order_number,
+          order.order_number,
+
+        userId:
+          user.id,
 
         accountEmail,
 
         checkoutEmail:
-          email,
+          checkoutEmail ||
+          null,
+
+        paypalOrderId,
+
+        paypalCaptureId:
+          captureId,
+
+        total:
+          safeTotal,
       }
     );
 
-    return NextResponse.json({
-      success: true,
-      order,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        order,
+      },
+      {
+        status: 200,
+
+        headers: {
+          "Cache-Control":
+            "no-store",
+        },
+      }
+    );
+
   } catch (error) {
     console.error(
       "Create order error:",
@@ -652,7 +1236,7 @@ export async function POST(
           "Something went wrong while saving the order.",
       },
       {
-        status: 500,
+        status: 500
       }
     );
   }

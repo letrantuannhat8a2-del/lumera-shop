@@ -43,12 +43,12 @@ export default async function ProductPage({
   // ========================================
 
   const {
-    data: variants,
-    error: variantError,
-  } = await supabaseAdmin
-    .from("product_variants")
-    .select("size, stock")
-    .eq("product_id", product.id);
+  data: variants,
+  error: variantError,
+} = await supabaseAdmin
+  .from("product_variants")
+  .select("size, stock, color")
+  .eq("product_id", product.id);
 
   if (variantError) {
     console.error(
@@ -61,12 +61,22 @@ export default async function ProductPage({
   // SAFE VARIANTS
   // ========================================
 
-  const safeVariants =
-    variants?.map((variant) => ({
-      size: variant.size,
-      stock: Number(variant.stock),
-    })) ?? [];
+ const safeVariants =
+  variants?.map(
+    (variant) => ({
+      size: String(
+        variant.size
+      ),
 
+      stock: Number(
+        variant.stock
+      ),
+
+      color: String(
+        variant.color ?? ""
+      ),
+    })
+  ) ?? [];
   // ========================================
   // TOTAL STOCK
   // ========================================
@@ -85,7 +95,7 @@ export default async function ProductPage({
   return (
     <main className="min-h-screen bg-[#faf9f7] text-black">
 
-      <Header active="dresses" />
+      <Header active="shop" />
 
       <ProductDetails
         product={{

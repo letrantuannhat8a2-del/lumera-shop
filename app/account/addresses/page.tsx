@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Country = {
-  name: string;
-  iso2: string;
-};
-
-type LocationItem = {
-  name: string;
-  state_code?: string;
-};
+import {
+  countries,
+  type CountryConfig,
+} from "./locationData";
 
 type Address = {
   id: string;
@@ -32,228 +27,58 @@ type Address = {
   isDefault: boolean;
 };
 
-const STORAGE_KEY = "lumera_addresses";
+type AddressApiItem = {
+  id: string;
 
-const API =
-  "https://countriesnow.space/api/v0.1";
+  full_name: string;
+  phone: string;
 
-/* =========================================================
-   COUNTRY LIST
-   Không gọi API để lấy country nữa
-========================================================= */
+  country: string;
+  country_code: string;
 
-const COUNTRY_CODES = [
-  "AF",
-  "AL",
-  "DZ",
-  "AD",
-  "AO",
-  "AG",
-  "AR",
-  "AM",
-  "AU",
-  "AT",
-  "AZ",
-  "BS",
-  "BH",
-  "BD",
-  "BB",
-  "BY",
-  "BE",
-  "BZ",
-  "BJ",
-  "BT",
-  "BO",
-  "BA",
-  "BW",
-  "BR",
-  "BN",
-  "BG",
-  "BF",
-  "BI",
-  "CV",
-  "KH",
-  "CM",
-  "CA",
-  "CF",
-  "TD",
-  "CL",
-  "CN",
-  "CO",
-  "KM",
-  "CG",
-  "CD",
-  "CR",
-  "CI",
-  "HR",
-  "CU",
-  "CY",
-  "CZ",
-  "DK",
-  "DJ",
-  "DM",
-  "DO",
-  "EC",
-  "EG",
-  "SV",
-  "GQ",
-  "ER",
-  "EE",
-  "SZ",
-  "ET",
-  "FJ",
-  "FI",
-  "FR",
-  "GA",
-  "GM",
-  "GE",
-  "DE",
-  "GH",
-  "GR",
-  "GD",
-  "GT",
-  "GN",
-  "GW",
-  "GY",
-  "HT",
-  "HN",
-  "HU",
-  "IS",
-  "IN",
-  "ID",
-  "IR",
-  "IQ",
-  "IE",
-  "IL",
-  "IT",
-  "JM",
-  "JP",
-  "JO",
-  "KZ",
-  "KE",
-  "KI",
-  "KP",
-  "KR",
-  "KW",
-  "KG",
-  "LA",
-  "LV",
-  "LB",
-  "LS",
-  "LR",
-  "LY",
-  "LI",
-  "LT",
-  "LU",
-  "MG",
-  "MW",
-  "MY",
-  "MV",
-  "ML",
-  "MT",
-  "MH",
-  "MR",
-  "MU",
-  "MX",
-  "FM",
-  "MD",
-  "MC",
-  "MN",
-  "ME",
-  "MA",
-  "MZ",
-  "MM",
-  "NA",
-  "NR",
-  "NP",
-  "NL",
-  "NZ",
-  "NI",
-  "NE",
-  "NG",
-  "MK",
-  "NO",
-  "OM",
-  "PK",
-  "PW",
-  "PS",
-  "PA",
-  "PG",
-  "PY",
-  "PE",
-  "PH",
-  "PL",
-  "PT",
-  "QA",
-  "RO",
-  "RU",
-  "RW",
-  "KN",
-  "LC",
-  "VC",
-  "WS",
-  "SM",
-  "ST",
-  "SA",
-  "SN",
-  "RS",
-  "SC",
-  "SL",
-  "SG",
-  "SK",
-  "SI",
-  "SB",
-  "SO",
-  "ZA",
-  "SS",
-  "ES",
-  "LK",
-  "SD",
-  "SR",
-  "SE",
-  "CH",
-  "SY",
-  "TJ",
-  "TZ",
-  "TH",
-  "TL",
-  "TG",
-  "TO",
-  "TT",
-  "TN",
-  "TR",
-  "TM",
-  "TV",
-  "UG",
-  "UA",
-  "AE",
-  "GB",
-  "US",
-  "UY",
-  "UZ",
-  "VU",
-  "VA",
-  "VE",
-  "VN",
-  "YE",
-  "ZM",
-  "ZW",
-];
+  region: string | null;
+  city: string | null;
+  district: string | null;
+
+  street: string;
+  postal_code: string | null;
+
+  is_default: boolean;
+};
+
+type AddressApiResponse = {
+  success?: boolean;
+  addresses?: AddressApiItem[];
+  address?: AddressApiItem;
+  error?: string;
+};
 
 export default function AddressesPage() {
-  /* =========================================================
-     SAVED ADDRESSES
-  ========================================================= */
+  // =====================================================
+  // ADDRESSES
+  // =====================================================
 
   const [addresses, setAddresses] =
     useState<Address[]>([]);
 
-  /* =========================================================
-     FORM
-  ========================================================= */
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
 
   const [showForm, setShowForm] =
     useState(false);
+
+  // =====================================================
+  // FORM
+  // =====================================================
 
   const [fullName, setFullName] =
     useState("");
@@ -261,11 +86,8 @@ export default function AddressesPage() {
   const [phone, setPhone] =
     useState("");
 
-  /*
-    Mặc định Japan
-  */
   const [countryCode, setCountryCode] =
-    useState("JP");
+    useState("US");
 
   const [region, setRegion] =
     useState("");
@@ -282,421 +104,116 @@ export default function AddressesPage() {
   const [postalCode, setPostalCode] =
     useState("");
 
-  /* =========================================================
-     LOCATION DATA
-  ========================================================= */
+  // =====================================================
+  // SELECTED COUNTRY
+  // =====================================================
 
-  const [regions, setRegions] =
-    useState<LocationItem[]>([]);
+  const selectedCountry: CountryConfig =
+    countries.find(
+      (country: CountryConfig) =>
+        country.code === countryCode
+    ) ?? countries[0];
 
-  const [cities, setCities] =
-    useState<LocationItem[]>([]);
+  // =====================================================
+  // LOAD ADDRESSES
+  // =====================================================
 
-  const [loadingRegions, setLoadingRegions] =
-    useState(false);
-
-  const [loadingCities, setLoadingCities] =
-    useState(false);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  /* =========================================================
-     COUNTRY LIST
-  ========================================================= */
-
-  const countries =
-    useMemo<Country[]>(() => {
-      const displayNames =
-        new Intl.DisplayNames(
-          ["en"],
-          {
-            type: "region",
-          }
-        );
-
-      return COUNTRY_CODES
-        .map((iso2) => ({
-          iso2,
-          name:
-            displayNames.of(iso2) ||
-            iso2,
-        }))
-        .sort((a, b) =>
-          a.name.localeCompare(
-            b.name
-          )
-        );
-    }, []);
-
-  /* =========================================================
-     SELECTED COUNTRY
-  ========================================================= */
-
-  const selectedCountry =
-    useMemo(() => {
-      return countries.find(
-        (country) =>
-          country.iso2 ===
-          countryCode
-      );
-    }, [
-      countries,
-      countryCode,
-    ]);
-
-  /* =========================================================
-     LOCATION LABELS
-  ========================================================= */
-
-  const locationLabels =
-    useMemo(() => {
-      switch (countryCode) {
-        case "JP":
-          return {
-            region: "PREFECTURE",
-            city: "CITY",
-            district: "WARD / DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "US":
-          return {
-            region: "STATE",
-            city: "CITY",
-            district: "COUNTY / DISTRICT",
-            postal: "ZIP CODE",
-          };
-
-        case "GB":
-          return {
-            region: "COUNTY / REGION",
-            city: "CITY / TOWN",
-            district: "DISTRICT",
-            postal: "POSTCODE",
-          };
-
-        case "CA":
-          return {
-            region: "PROVINCE / TERRITORY",
-            city: "CITY",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "AU":
-          return {
-            region: "STATE / TERRITORY",
-            city: "CITY / SUBURB",
-            district: "DISTRICT",
-            postal: "POSTCODE",
-          };
-
-        case "KR":
-          return {
-            region: "PROVINCE / CITY",
-            city: "CITY",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "TH":
-          return {
-            region: "PROVINCE",
-            city: "DISTRICT",
-            district: "SUBDISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "FR":
-          return {
-            region: "REGION",
-            city: "CITY / COMMUNE",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "DE":
-          return {
-            region: "STATE",
-            city: "CITY",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "IT":
-          return {
-            region: "REGION",
-            city: "CITY / COMUNE",
-            district: "PROVINCE",
-            postal: "POSTAL CODE",
-          };
-
-        case "ES":
-          return {
-            region:
-              "AUTONOMOUS COMMUNITY",
-            city:
-              "CITY / MUNICIPALITY",
-            district: "PROVINCE",
-            postal: "POSTAL CODE",
-          };
-
-        case "NL":
-          return {
-            region: "PROVINCE",
-            city: "CITY / TOWN",
-            district: "MUNICIPALITY",
-            postal: "POSTAL CODE",
-          };
-
-        case "CH":
-          return {
-            region: "CANTON",
-            city:
-              "CITY / MUNICIPALITY",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        case "NZ":
-          return {
-            region: "REGION",
-            city: "CITY / TOWN",
-            district: "DISTRICT",
-            postal: "POSTCODE",
-          };
-
-        case "SG":
-          return {
-            region: "REGION",
-            city: "CITY",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-
-        default:
-          return {
-            region:
-              "STATE / PROVINCE / REGION",
-            city: "CITY / TOWN",
-            district: "DISTRICT",
-            postal: "POSTAL CODE",
-          };
-      }
-    }, [countryCode]);
-
-  /* =========================================================
-     LOAD SAVED ADDRESSES
-  ========================================================= */
-
-  useEffect(() => {
+  async function loadAddresses() {
     try {
-      const saved =
-        localStorage.getItem(
-          STORAGE_KEY
+      setLoading(true);
+      setError("");
+
+      const response =
+        await fetch("/api/addresses", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+      const data: AddressApiResponse =
+        await response.json();
+
+      if (!response.ok) {
+        setError(
+          data.error ||
+            "Unable to load your addresses."
         );
 
-      if (!saved) {
         return;
       }
 
-      const parsed =
-        JSON.parse(saved);
+      const mappedAddresses: Address[] =
+        (data.addresses ?? []).map(
+          (item: AddressApiItem) => ({
+            id: item.id,
 
-      if (Array.isArray(parsed)) {
-        setAddresses(parsed);
-      }
-    } catch {
-      setAddresses([]);
-    }
-  }, []);
+            fullName:
+              item.full_name ?? "",
 
-  /* =========================================================
-     LOAD REGIONS
-  ========================================================= */
+            phone:
+              item.phone ?? "",
 
-  useEffect(() => {
-    async function loadRegions() {
-      setRegions([]);
-      setCities([]);
+            country:
+              item.country ?? "",
 
-      setRegion("");
-      setCity("");
-      setDistrict("");
+            countryCode:
+              item.country_code ?? "",
 
-      if (!selectedCountry) {
-        return;
-      }
+            region:
+              item.region ?? "",
 
-      setLoadingRegions(true);
+            city:
+              item.city ?? "",
 
-      try {
-        const response =
-          await fetch(
-            `${API}/countries/states`,
-            {
-              method: "POST",
+            district:
+              item.district ?? "",
 
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
+            street:
+              item.street ?? "",
 
-              body: JSON.stringify({
-                country:
-                  selectedCountry.name,
-              }),
-            }
-          );
+            postalCode:
+              item.postal_code ?? "",
 
-        if (!response.ok) {
-          throw new Error(
-            "Unable to load regions"
-          );
-        }
-
-        const result =
-          await response.json();
-
-        const data =
-          result?.data?.states;
-
-        if (Array.isArray(data)) {
-          setRegions(
-            data.map(
-              (
-                item: {
-                  name: string;
-                  state_code?: string;
-                }
-              ) => ({
-                name: item.name,
-                state_code:
-                  item.state_code,
-              })
-            )
-          );
-        }
-      } catch (error) {
-        console.error(
-          "REGION ERROR:",
-          error
+            isDefault:
+              Boolean(
+                item.is_default
+              ),
+          })
         );
 
-        setRegions([]);
-      } finally {
-        setLoadingRegions(false);
-      }
+      setAddresses(
+        mappedAddresses
+      );
+    } catch (err) {
+      console.error(
+        "Load addresses error:",
+        err
+      );
+
+      setError(
+        "Something went wrong while loading your addresses."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    loadRegions();
-  }, [selectedCountry]);
-
-  /* =========================================================
-     LOAD CITIES
-  ========================================================= */
-
-  useEffect(() => {
-    async function loadCities() {
-      setCities([]);
-      setCity("");
-
-      if (
-        !selectedCountry ||
-        !region
-      ) {
-        return;
-      }
-
-      setLoadingCities(true);
-
-      try {
-        const response =
-          await fetch(
-            `${API}/countries/state/cities`,
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body: JSON.stringify({
-                country:
-                  selectedCountry.name,
-
-                state: region,
-              }),
-            }
-          );
-
-        if (!response.ok) {
-          throw new Error(
-            "Unable to load cities"
-          );
-        }
-
-        const result =
-          await response.json();
-
-        const data =
-          Array.isArray(
-            result?.data
-          )
-            ? result.data
-            : [];
-
-        setCities(
-          data.map(
-            (name: string) => ({
-              name,
-            })
-          )
-        );
-      } catch (error) {
-        console.error(
-          "CITY ERROR:",
-          error
-        );
-
-        setCities([]);
-      } finally {
-        setLoadingCities(false);
-      }
-    }
-
-    loadCities();
-  }, [
-    selectedCountry,
-    region,
-  ]);
-
-  /* =========================================================
-     SAVE LOCAL STORAGE
-  ========================================================= */
-
-  function persistAddresses(
-    next: Address[]
-  ) {
-    setAddresses(next);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(next)
-    );
   }
 
-  /* =========================================================
-     RESET FORM
-  ========================================================= */
+  // =====================================================
+  // LOAD ON PAGE OPEN
+  // =====================================================
+
+  useEffect(() => {
+    loadAddresses();
+  }, []);
+
+  // =====================================================
+  // RESET FORM
+  // =====================================================
 
   function resetForm() {
     setFullName("");
     setPhone("");
 
-    setCountryCode("JP");
+    setCountryCode("US");
 
     setRegion("");
     setCity("");
@@ -704,227 +221,239 @@ export default function AddressesPage() {
 
     setStreet("");
     setPostalCode("");
-
-    setRegions([]);
-    setCities([]);
   }
 
-  /* =========================================================
-     SAVE ADDRESS
-  ========================================================= */
+  // =====================================================
+  // ADD ADDRESS
+  // =====================================================
 
-  function saveAddress(
+  async function handleAddAddress(
     event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (!fullName.trim()) {
-      return;
-    }
-
-    if (!phone.trim()) {
-      return;
-    }
-
-    if (!selectedCountry) {
-      return;
-    }
-
-    if (!street.trim()) {
-      return;
-    }
-
-    if (!region) {
-      return;
-    }
-
-    if (!city) {
-      return;
-    }
+    if (saving) return;
 
     setSaving(true);
+    setError("");
+    setMessage("");
 
-    const newAddress: Address = {
-      id: crypto.randomUUID(),
+    try {
+      const response =
+        await fetch("/api/addresses", {
+          method: "POST",
 
-      fullName:
-        fullName.trim(),
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-      phone:
-        phone.trim(),
+          body: JSON.stringify({
+            fullName:
+              fullName.trim(),
 
-      country:
-        selectedCountry.name,
+            phone:
+              phone.trim(),
 
-      countryCode:
-        selectedCountry.iso2,
+            country:
+              selectedCountry.name,
 
-      region:
-        region.trim(),
+            countryCode,
 
-      city:
-        city.trim(),
+            region:
+              region.trim(),
 
-      district:
-        district.trim(),
+            city:
+              city.trim(),
 
-      street:
-        street.trim(),
+            district:
+              district.trim(),
 
-      postalCode:
-        postalCode.trim(),
+            street:
+              street.trim(),
 
-      isDefault:
-        addresses.length === 0,
-    };
+            postalCode:
+              postalCode.trim(),
+          }),
+        });
 
-    persistAddresses([
-      ...addresses,
-      newAddress,
-    ]);
+      const data: AddressApiResponse =
+        await response.json();
 
-    resetForm();
+      if (!response.ok) {
+        setError(
+          data.error ||
+            "Unable to save this address."
+        );
 
-    setShowForm(false);
+        return;
+      }
 
-    setSaving(false);
+      setMessage(
+        "Your address has been saved."
+      );
+
+      resetForm();
+
+      setShowForm(false);
+
+      await loadAddresses();
+    } catch (err) {
+      console.error(
+        "Add address error:",
+        err
+      );
+
+      setError(
+        "Something went wrong while saving the address."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
-  /* =========================================================
-     REMOVE ADDRESS
-  ========================================================= */
+  // =====================================================
+  // SET DEFAULT ADDRESS
+  // =====================================================
 
-  function removeAddress(
+  async function handleSetDefault(
     id: string
   ) {
-    const target =
-      addresses.find(
-        (item) =>
-          item.id === id
-      );
+    setError("");
+    setMessage("");
 
-    let remaining =
-      addresses.filter(
-        (item) =>
-          item.id !== id
-      );
+    try {
+      const response =
+        await fetch("/api/addresses", {
+          method: "PATCH",
 
-    if (
-      target?.isDefault &&
-      remaining.length > 0
-    ) {
-      remaining =
-        remaining.map(
-          (
-            item,
-            index
-          ) => ({
-            ...item,
-            isDefault:
-              index === 0,
-          })
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            id,
+          }),
+        });
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        setError(
+          data.error ||
+            "Unable to update your default address."
         );
+
+        return;
+      }
+
+      setMessage(
+        "Default address updated."
+      );
+
+      await loadAddresses();
+    } catch (err) {
+      console.error(
+        "Set default address error:",
+        err
+      );
+
+      setError(
+        "Something went wrong while updating your address."
+      );
+    }
+  }
+
+  // =====================================================
+  // DELETE ADDRESS
+  // =====================================================
+
+  async function handleDelete(
+    id: string
+  ) {
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to remove this address?"
+      );
+
+    if (!confirmed) {
+      return;
     }
 
-    persistAddresses(
-      remaining
-    );
-  }
+    setError("");
+    setMessage("");
 
-  /* =========================================================
-     SET DEFAULT
-  ========================================================= */
+    try {
+      const response =
+        await fetch("/api/addresses", {
+          method: "DELETE",
 
-  function setDefaultAddress(
-    id: string
-  ) {
-    const next =
-      addresses.map(
-        (item) => ({
-          ...item,
-          isDefault:
-            item.id === id,
-        })
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            id,
+          }),
+        });
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        setError(
+          data.error ||
+            "Unable to remove this address."
+        );
+
+        return;
+      }
+
+      setMessage(
+        "Address removed."
       );
 
-    persistAddresses(next);
+      await loadAddresses();
+    } catch (err) {
+      console.error(
+        "Delete address error:",
+        err
+      );
+
+      setError(
+        "Something went wrong while removing the address."
+      );
+    }
   }
 
-  /* =========================================================
-     STYLES
-  ========================================================= */
-
-  const inputClass = `
-    h-13
-    w-full
-    border
-    border-black/15
-    bg-[#f8f6f2]
-    px-4
-    text-sm
-    outline-none
-    transition
-    focus:border-black
-    sm:h-14
-  `;
-
-  const selectClass = `
-    h-13
-    w-full
-    appearance-none
-    border
-    border-black/15
-    bg-[#f8f6f2]
-    px-4
-    pr-10
-    text-sm
-    outline-none
-    transition
-    focus:border-black
-    disabled:cursor-not-allowed
-    disabled:opacity-40
-    sm:h-14
-  `;
-
-  /* =========================================================
-     UI
-  ========================================================= */
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <main className="min-h-screen bg-[#f8f6f2] text-black">
 
-      {/* HEADER */}
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-      <header className="border-b border-black/10 bg-[#f8f6f2]">
+      <header className="border-b border-black/10">
 
-        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:min-h-24 sm:px-8 md:px-10">
+        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between px-5 sm:min-h-24 sm:px-8 md:px-10">
 
           <Link
             href="/account"
-            className="
-              shrink-0
-              font-serif
-              text-2xl
-              tracking-[0.18em]
-              sm:text-3xl
-              sm:tracking-[0.22em]
-            "
+            className="font-serif text-2xl tracking-[0.2em] sm:text-3xl"
           >
             LUMÉRA
           </Link>
 
           <Link
             href="/account"
-            className="
-              shrink-0
-              text-[8px]
-              tracking-[0.2em]
-              text-black/50
-              transition
-              hover:text-black
-              sm:text-[9px]
-              sm:tracking-[0.25em]
-            "
+            className="text-[9px] tracking-[0.25em] text-black/50 transition hover:text-black"
           >
             BACK TO ACCOUNT
           </Link>
@@ -933,670 +462,517 @@ export default function AddressesPage() {
 
       </header>
 
-      {/* PAGE */}
+      {/* =================================================
+          CONTENT
+      ================================================= */}
 
-      <section className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8 sm:pb-28 sm:pt-16 md:px-10">
+      <section className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-20">
 
         {/* TITLE */}
 
-        <div className="flex flex-col justify-between gap-7 border-b border-black/10 pb-8 sm:flex-row sm:items-end sm:pb-10">
+        <p className="text-[9px] tracking-[0.4em] text-black/40">
+          ACCOUNT / ADDRESSES
+        </p>
+
+        <div className="mt-5 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
 
           <div>
 
-            <p className="text-[8px] tracking-[0.38em] text-black/35 sm:text-[9px] sm:tracking-[0.4em]">
-              DELIVERY
-            </p>
-
-            <h1 className="mt-4 font-serif text-4xl sm:mt-5 sm:text-5xl md:text-6xl">
+            <h1 className="font-serif text-4xl sm:text-5xl">
               Addresses
             </h1>
 
-            <p className="mt-4 max-w-lg text-xs leading-6 text-black/45 sm:text-sm">
-              Save your delivery details
-              for a faster and easier
-              checkout.
+            <p className="mt-4 max-w-lg text-sm leading-6 text-black/50">
+              Manage your saved shipping
+              addresses for faster checkout.
             </p>
 
           </div>
 
+          {/* ADD BUTTON */}
+
           <button
             type="button"
             onClick={() => {
-              if (showForm) {
-                resetForm();
-              }
-
               setShowForm(
                 !showForm
               );
+
+              setError("");
+              setMessage("");
             }}
-            className="
-              self-start
-              bg-black
-              px-7
-              py-3.5
-              text-[8px]
-              tracking-[0.25em]
-              text-white
-              transition
-              hover:bg-black/80
-              sm:self-auto
-              sm:px-9
-              sm:py-4
-              sm:text-[9px]
-            "
+            className="w-full bg-black px-6 py-4 text-[9px] tracking-[0.3em] text-white transition hover:bg-black/80 sm:w-auto"
           >
             {showForm
-              ? "CLOSE"
+              ? "CANCEL"
               : "ADD NEW ADDRESS"}
           </button>
 
         </div>
 
-        {/* FORM */}
+        {/* =================================================
+            SUCCESS MESSAGE
+        ================================================= */}
+
+        {message && (
+          <div className="mt-8 border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-700">
+            {message}
+          </div>
+        )}
+
+        {/* =================================================
+            ERROR MESSAGE
+        ================================================= */}
+
+        {error && (
+          <div className="mt-8 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+        {/* =================================================
+            ADD ADDRESS FORM
+        ================================================= */}
 
         {showForm && (
-
           <form
             onSubmit={
-              saveAddress
+              handleAddAddress
             }
-            className="
-              mt-8
-              border
-              border-black/10
-              bg-white
-              p-5
-              sm:mt-10
-              sm:p-8
-              md:p-10
-            "
+            className="mt-10 border border-black/10 bg-white p-6 sm:p-9"
           >
 
-            <p className="text-[8px] tracking-[0.35em] text-black/35 sm:text-[9px] sm:tracking-[0.4em]">
-              NEW DELIVERY ADDRESS
+            <p className="text-[9px] tracking-[0.35em] text-black/40">
+              NEW SHIPPING ADDRESS
             </p>
 
-            <h2 className="mt-3 font-serif text-2xl sm:text-3xl">
-              Where should we deliver?
-            </h2>
+            {/* FULL NAME */}
 
-            {/* NAME + PHONE */}
+            <div className="mt-8">
 
-            <div className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 md:grid-cols-2">
+              <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                FULL NAME
+              </label>
 
-              <div>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(event) =>
+                  setFullName(
+                    event.target.value
+                  )
+                }
+                required
+                autoComplete="name"
+                className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+              />
 
-                <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                  FULL NAME
-                </label>
+            </div>
 
-                <input
-                  required
-                  value={fullName}
-                  onChange={(event) =>
-                    setFullName(
-                      event.target.value
-                    )
-                  }
-                  placeholder="Full name"
-                  autoComplete="name"
-                  className={inputClass}
-                />
+            {/* PHONE */}
 
-              </div>
+            <div className="mt-6">
 
-              <div>
+              <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                PHONE NUMBER
+              </label>
 
-                <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                  PHONE NUMBER
-                </label>
-
-                <input
-                  required
-                  type="tel"
-                  value={phone}
-                  onChange={(event) =>
-                    setPhone(
-                      event.target.value
-                    )
-                  }
-                  placeholder="+81 90 0000 0000"
-                  autoComplete="tel"
-                  className={inputClass}
-                />
-
-              </div>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(event) =>
+                  setPhone(
+                    event.target.value
+                  )
+                }
+                required
+                autoComplete="tel"
+                className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+              />
 
             </div>
 
             {/* COUNTRY */}
 
-            <div className="mt-5 sm:mt-6">
+            <div className="mt-6">
 
-              <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
+              <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
                 COUNTRY
               </label>
 
-              <div className="relative">
+              <select
+                value={countryCode}
+                onChange={(event) => {
+                  setCountryCode(
+                    event.target.value
+                  );
 
-                <select
-                  value={countryCode}
-                  onChange={(event) => {
-
-                    setCountryCode(
-                      event.target.value
-                    );
-
-                    setRegion("");
-                    setCity("");
-                    setDistrict("");
-
-                  }}
-                  className={selectClass}
-                >
-
-                  <option value="">
-                    Select country
-                  </option>
-
-                  {countries.map(
-                    (country) => (
-                      <option
-                        key={
-                          country.iso2
-                        }
-                        value={
-                          country.iso2
-                        }
-                      >
-                        {country.name}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs">
-                  ↓
-                </span>
-
-              </div>
+                  setRegion("");
+                  setCity("");
+                  setDistrict("");
+                }}
+                className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+              >
+                {countries.map(
+                  (
+                    country: CountryConfig
+                  ) => (
+                    <option
+                      key={
+                        country.code
+                      }
+                      value={
+                        country.code
+                      }
+                    >
+                      {country.name}
+                    </option>
+                  )
+                )}
+              </select>
 
             </div>
 
-            {/* REGION */}
+            {/* REGION + CITY */}
 
-            <div className="mt-5 sm:mt-6">
+            <div className="mt-6 grid gap-6 sm:grid-cols-2">
 
-              <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                {locationLabels.region}
-              </label>
+              {/* REGION */}
 
-              <div className="relative">
+              {selectedCountry.hasRegion && (
+                <div>
 
-                <select
-                  required
-                  value={region}
-                  onChange={(event) => {
+                  <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                    {
+                      selectedCountry.regionLabel
+                    }
+                  </label>
 
-                    setRegion(
-                      event.target.value
-                    );
+                  <input
+                    type="text"
+                    value={region}
+                    onChange={(event) =>
+                      setRegion(
+                        event.target.value
+                      )
+                    }
+                    required={
+                      selectedCountry.regionRequired
+                    }
+                    autoComplete="address-level1"
+                    className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+                  />
 
-                    setCity("");
-                    setDistrict("");
+                </div>
+              )}
 
-                  }}
-                  disabled={
-                    !selectedCountry ||
-                    loadingRegions ||
-                    regions.length === 0
-                  }
-                  className={selectClass}
-                >
+              {/* CITY */}
 
-                  <option value="">
-                    {!selectedCountry
-                      ? "Select country first"
-                      : loadingRegions
-                        ? "Loading..."
-                        : regions.length === 0
-                          ? "No regions available"
-                          : `Select ${locationLabels.region.toLowerCase()}`}
-                  </option>
+              {selectedCountry.hasCity && (
+                <div>
 
-                  {regions.map(
-                    (item) => (
-                      <option
-                        key={
-                          item.name
-                        }
-                        value={
-                          item.name
-                        }
-                      >
-                        {item.name}
-                      </option>
-                    )
-                  )}
+                  <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                    {
+                      selectedCountry.cityLabel
+                    }
+                  </label>
 
-                </select>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(event) =>
+                      setCity(
+                        event.target.value
+                      )
+                    }
+                    required={
+                      selectedCountry.cityRequired
+                    }
+                    autoComplete="address-level2"
+                    className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+                  />
 
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs">
-                  ↓
-                </span>
-
-              </div>
-
-            </div>
-
-            {/* CITY */}
-
-            <div className="mt-5 sm:mt-6">
-
-              <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                {locationLabels.city}
-              </label>
-
-              <div className="relative">
-
-                <select
-                  required
-                  value={city}
-                  onChange={(event) =>
-                    setCity(
-                      event.target.value
-                    )
-                  }
-                  disabled={
-                    !region ||
-                    loadingCities ||
-                    cities.length === 0
-                  }
-                  className={selectClass}
-                >
-
-                  <option value="">
-                    {!region
-                      ? `Select ${locationLabels.region.toLowerCase()} first`
-                      : loadingCities
-                        ? "Loading..."
-                        : cities.length === 0
-                          ? "No cities available"
-                          : `Select ${locationLabels.city.toLowerCase()}`}
-                  </option>
-
-                  {cities.map(
-                    (item) => (
-                      <option
-                        key={
-                          item.name
-                        }
-                        value={
-                          item.name
-                        }
-                      >
-                        {item.name}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs">
-                  ↓
-                </span>
-
-              </div>
+                </div>
+              )}
 
             </div>
 
             {/* DISTRICT */}
 
-            <div className="mt-5 sm:mt-6">
+            {selectedCountry.hasDistrict && (
+              <div className="mt-6">
 
-              <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                {locationLabels.district}
+                <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                  {
+                    selectedCountry.districtLabel
+                  }
+                </label>
+
+                <input
+                  type="text"
+                  value={district}
+                  onChange={(event) =>
+                    setDistrict(
+                      event.target.value
+                    )
+                  }
+                  required={
+                    selectedCountry.districtRequired
+                  }
+                  className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+                />
+
+              </div>
+            )}
+
+            {/* STREET */}
+
+            <div className="mt-6">
+
+              <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                STREET ADDRESS
               </label>
 
               <input
-                value={district}
+                type="text"
+                value={street}
                 onChange={(event) =>
-                  setDistrict(
+                  setStreet(
                     event.target.value
                   )
                 }
-                placeholder={
-                  locationLabels.district.toLowerCase()
-                }
-                className={inputClass}
+                required
+                autoComplete="street-address"
+                className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
               />
 
             </div>
 
-            {/* STREET + POSTAL */}
+            {/* POSTAL CODE */}
 
-            <div className="mt-5 grid gap-5 sm:mt-6 sm:gap-6 md:grid-cols-[1fr_220px]">
+            <div className="mt-6">
 
-              <div>
-
-                <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                  STREET ADDRESS
-                </label>
-
-                <input
-                  required
-                  value={street}
-                  onChange={(event) =>
-                    setStreet(
-                      event.target.value
-                    )
-                  }
-                  placeholder="House number and street name"
-                  autoComplete="street-address"
-                  className={inputClass}
-                />
-
-              </div>
-
-              <div>
-
-                <label className="mb-2 block text-[8px] tracking-[0.2em] text-black/45 sm:text-[9px]">
-                  {locationLabels.postal}
-                </label>
-
-                <input
-                  value={postalCode}
-                  onChange={(event) =>
-                    setPostalCode(
-                      event.target.value
-                    )
-                  }
-                  placeholder={
-                    countryCode === "JP"
-                      ? "150-0001"
-                      : countryCode === "US"
-                        ? "10001"
-                        : countryCode === "GB"
-                          ? "SW1A 1AA"
-                          : "Postal code"
-                  }
-                  autoComplete="postal-code"
-                  className={inputClass}
-                />
-
-              </div>
-
-            </div>
-
-            {/* BUTTONS */}
-
-            <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center">
-
-              <button
-                type="submit"
-                disabled={
-                  saving ||
-                  !selectedCountry
+              <label className="mb-2 block text-[9px] tracking-[0.2em] text-black/50">
+                {
+                  selectedCountry.postalLabel
                 }
-                className="
-                  w-full
-                  bg-black
-                  px-10
-                  py-4
-                  text-[8px]
-                  tracking-[0.3em]
-                  text-white
-                  transition
-                  hover:bg-black/80
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                  sm:w-auto
-                  sm:text-[9px]
-                "
-              >
-                {saving
-                  ? "SAVING..."
-                  : "SAVE ADDRESS"}
-              </button>
+              </label>
 
-              <button
-                type="button"
-                onClick={() => {
-
-                  resetForm();
-
-                  setShowForm(
-                    false
-                  );
-
-                }}
-                className="
-                  w-full
-                  px-8
-                  py-4
-                  text-[8px]
-                  tracking-[0.25em]
-                  text-black/50
-                  transition
-                  hover:text-black
-                  sm:w-auto
-                  sm:text-[9px]
-                "
-              >
-                CANCEL
-              </button>
+              <input
+                type="text"
+                value={postalCode}
+                onChange={(event) =>
+                  setPostalCode(
+                    event.target.value
+                  )
+                }
+                autoComplete="postal-code"
+                className="w-full border border-black/15 bg-[#f8f6f2] px-4 py-4 text-sm outline-none transition focus:border-black"
+              />
 
             </div>
+
+            {/* SAVE */}
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="mt-8 w-full bg-black py-4 text-[9px] tracking-[0.3em] text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving
+                ? "SAVING..."
+                : "SAVE ADDRESS"}
+            </button>
 
           </form>
         )}
 
-        {/* SAVED ADDRESSES */}
+        {/* =================================================
+            ADDRESS LIST
+        ================================================= */}
 
-        <div className="mt-10 sm:mt-14">
+        <div className="mt-10">
 
-          {addresses.length === 0 ? (
+          {/* LOADING */}
 
-            <div className="border border-black/10 bg-white px-6 py-20 text-center sm:px-10 sm:py-24">
+          {loading ? (
 
-              <div className="mx-auto flex h-14 w-14 items-center justify-center border border-black/10 font-serif text-lg">
-                +
-              </div>
+            <div className="border border-black/10 bg-white px-6 py-16 text-center">
 
-              <p className="mt-7 text-[8px] tracking-[0.35em] text-black/35 sm:text-[9px]">
-                SAVED ADDRESSES
+              <p className="text-xs tracking-[0.2em] text-black/40">
+                LOADING ADDRESSES...
               </p>
 
-              <h2 className="mt-4 font-serif text-3xl sm:text-4xl">
-                No addresses yet
+            </div>
+
+          ) : addresses.length === 0 ? (
+
+            /* =================================================
+               EMPTY
+            ================================================= */
+
+            <div className="border border-black/10 bg-white px-6 py-16 text-center">
+
+              <h2 className="font-serif text-2xl">
+                No saved addresses
               </h2>
 
-              <p className="mx-auto mt-4 max-w-md text-xs leading-6 text-black/45 sm:text-sm">
-                Add a delivery address
-                and checkout will be
-                faster next time.
+              <p className="mt-3 text-sm text-black/50">
+                Add a shipping address
+                to make checkout faster.
               </p>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setShowForm(true)
-                }
-                className="
-                  mt-8
-                  bg-black
-                  px-9
-                  py-4
-                  text-[8px]
-                  tracking-[0.3em]
-                  text-white
-                  sm:text-[9px]
-                "
-              >
-                ADD ADDRESS
-              </button>
+              {!showForm && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowForm(true)
+                  }
+                  className="mt-7 border-b border-black pb-1 text-[9px] tracking-[0.25em]"
+                >
+                  ADD ADDRESS
+                </button>
+              )}
 
             </div>
 
           ) : (
 
-            <div>
+            /* =================================================
+               ADDRESS CARDS
+            ================================================= */
 
-              <div className="mb-5 flex items-center justify-between">
+            <div className="space-y-5">
 
-                <p className="text-[8px] tracking-[0.35em] text-black/35 sm:text-[9px]">
-                  SAVED ADDRESSES
-                </p>
+              {addresses.map(
+                (address: Address) => (
 
-                <p className="text-[9px] text-black/35">
-                  {addresses.length}{" "}
-                  {addresses.length === 1
-                    ? "ADDRESS"
-                    : "ADDRESSES"}
-                </p>
+                  <article
+                    key={address.id}
+                    className="border border-black/10 bg-white p-6 sm:p-8"
+                  >
 
-              </div>
+                    {/* NAME + DEFAULT */}
 
-              <div className="grid gap-4 md:grid-cols-2">
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
 
-                {addresses.map(
-                  (item) => (
+                      <div>
 
-                    <article
-                      key={
-                        item.id
-                      }
-                      className="
-                        relative
-                        border
-                        border-black/10
-                        bg-white
-                        p-6
-                        sm:p-8
-                      "
-                    >
+                        <div className="flex flex-wrap items-center gap-3">
 
-                      {item.isDefault && (
-                        <span className="
-                          absolute
-                          right-5
-                          top-5
-                          border
-                          border-black/15
-                          px-2.5
-                          py-1.5
-                          text-[7px]
-                          tracking-[0.2em]
-                          sm:right-7
-                          sm:top-7
-                          sm:text-[8px]
-                        ">
-                          DEFAULT
-                        </span>
-                      )}
+                          <h2 className="font-serif text-xl sm:text-2xl">
+                            {
+                              address.fullName
+                            }
+                          </h2>
 
-                      <p className="text-[8px] tracking-[0.3em] text-black/35 sm:text-[9px]">
-                        {item.country}
-                      </p>
+                          {address.isDefault && (
+                            <span className="border border-black/20 px-2 py-1 text-[7px] tracking-[0.18em] text-black/50">
+                              DEFAULT
+                            </span>
+                          )}
 
-                      <h2 className="mt-5 pr-20 font-serif text-2xl sm:text-3xl">
-                        {item.fullName}
-                      </h2>
+                        </div>
 
-                      <p className="mt-2 text-xs text-black/50">
-                        {item.phone}
-                      </p>
-
-                      <div className="mt-5 text-sm leading-7 text-black/60">
-
-                        {item.street && (
-                          <p>
-                            {item.street}
-                          </p>
-                        )}
-
-                        {item.district && (
-                          <p>
-                            {item.district}
-                          </p>
-                        )}
-
-                        {item.city && (
-                          <p>
-                            {item.city}
-                          </p>
-                        )}
-
-                        {item.region && (
-                          <p>
-                            {item.region}
-                          </p>
-                        )}
-
-                        {item.postalCode && (
-                          <p>
-                            {item.postalCode}
-                          </p>
-                        )}
-
-                        <p>
-                          {item.country}
+                        <p className="mt-2 text-sm text-black/50">
+                          {
+                            address.phone
+                          }
                         </p>
 
                       </div>
 
-                      <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 border-t border-black/10 pt-5">
+                    </div>
 
-                        {!item.isDefault && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDefaultAddress(
-                                item.id
-                              )
+                    {/* ADDRESS */}
+
+                    <div className="mt-6 border-t border-black/10 pt-6">
+
+                      <p className="text-sm leading-7 text-black/70">
+
+                        {address.street}
+
+                        <br />
+
+                        {address.district && (
+                          <>
+                            {
+                              address.district
                             }
-                            className="
-                              text-[8px]
-                              tracking-[0.2em]
-                              text-black/50
-                              transition
-                              hover:text-black
-                              sm:text-[9px]
-                            "
-                          >
-                            SET AS DEFAULT
-                          </button>
+
+                            <br />
+                          </>
                         )}
 
+                        {address.city}
+
+                        {address.region && (
+                          <>
+                            {address.city
+                              ? ", "
+                              : ""}
+
+                            {
+                              address.region
+                            }
+                          </>
+                        )}
+
+                        {address.postalCode && (
+                          <>
+                            {" "}
+                            {
+                              address.postalCode
+                            }
+                          </>
+                        )}
+
+                        <br />
+
+                        {
+                          address.country
+                        }
+
+                      </p>
+
+                    </div>
+
+                    {/* ACTIONS */}
+
+                    <div className="mt-7 flex flex-wrap gap-x-6 gap-y-4 border-t border-black/10 pt-5">
+
+                      {!address.isDefault && (
                         <button
                           type="button"
                           onClick={() =>
-                            removeAddress(
-                              item.id
+                            handleSetDefault(
+                              address.id
                             )
                           }
-                          className="
-                            text-[8px]
-                            tracking-[0.2em]
-                            text-black/40
-                            transition
-                            hover:text-black
-                            sm:text-[9px]
-                          "
+                          className="text-[8px] tracking-[0.22em] underline underline-offset-4"
                         >
-                          REMOVE
+                          SET AS DEFAULT
                         </button>
+                      )}
 
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(
+                            address.id
+                          )
+                        }
+                        className="text-[8px] tracking-[0.22em] text-red-500 underline underline-offset-4"
+                      >
+                        REMOVE
+                      </button>
 
-                    </article>
+                    </div>
 
-                  )
-                )}
+                  </article>
 
-              </div>
+                )
+              )}
 
             </div>
 
